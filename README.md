@@ -67,7 +67,7 @@ Example outputs:
 python examples/fastemriwaveforms_emri_h20_h30_demo.py
 ```
 
-This example uses `FastEMRIWaveforms` to generate a circular equatorial Kerr trajectory with mass ratio $q=10^5$ and spin $\chi=0.8$, computes perturbative $h_{20}$ and $h_{30}$ from the oscillatory modes, and compares $h(t)-h(t_0)$ with the same effective-0PN construction used in the `SEOBNRv5EHM` circular example.
+This example uses `FastEMRIWaveforms` to generate a circular equatorial Kerr trajectory with mass ratio $q=10^5$ and spin $\chi=0.8$, computes perturbative $h_{20}$ and $h_{30}$ from the oscillatory modes, and compares $h(t)-h(t_0)$ with the effective-0PN construction.
 
 Example outputs:
 
