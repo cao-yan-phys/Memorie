@@ -76,7 +76,7 @@ Example outputs:
 
 ## The Rise and Fall of Displacement Memory at Finite Radius
 
-The effective source of null displacement memory can be modeled by $[r^2T_{ij}^\text{null}(u=t-r,\mathbf{x}=r\mathbf{n})]=\left(\frac{dE_\text{null}}{dud\Omega_\mathbf{n}}\right)_u n_i n_j$, with $|\mathbf{n}|=1$. This describes the null radiation emitted by a point source. Following [Wiseman and Will](https://journals.aps.org/prd/abstract/10.1103/PhysRevD.44.R2945), a solution to the linearized Einstein equation in a flat background (after TT projection) can be written as
+The effective source of null displacement memory can be modeled by $[r^2T_{ij}(u=t-r,\mathbf{x}=r\mathbf{n})]=\left(\frac{dE_\text{null}}{dud\Omega_\mathbf{n}}\right)_u n_i n_j$, with $|\mathbf{n}|=1$. This describes the null radiation emitted by a point source. Following [Wiseman and Will](https://journals.aps.org/prd/abstract/10.1103/PhysRevD.44.R2945), a solution to the linearized Einstein equation in a flat background (after TT projection) can be written as
 
 $$
 h(t,R,\hat{\mathbf{k}})=\sum_{l,m}h_{l,m}(t,R){}_{-2}Y_{lm}(\hat{\mathbf{k}})=\int_{-\infty}^{t-R}\frac{du}{4\pi(t-u)}\int_{\mathbf{n}} \frac{16\pi [r^2T_{ij}(u,\mathbf{x}=r\mathbf{n})]\frac{e_{ij}^+(\hat{\mathbf{k}})-ie_{ij}^\times(\hat{\mathbf{k}})}{2}}{1-\left(\frac{R}{t-u}\right)\mathbf{n}\cdot\hat{\mathbf{k}}}.
