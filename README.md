@@ -6,9 +6,9 @@ Includes:
 
 - displacement, spin, and CM memory evaluators;
 - leading-order PN helpers for nonprecessing quasicircular compact binaries;
-- a bundled `lmax=10` gamma table for common memory-mode calculations.
+- a bundled `lmax=10` angular-coupling table for memory-mode calculations.
 
-The bundled gamma table lives at `src/vacuum_memory_modes/data/gamma_coeffs_lmax10.npz`. It stores the angular coupling coefficients used to build memory modes from products of oscillatory waveform modes. The examples load this table automatically, so they do not regenerate the Wigner-3j coefficients at runtime. If a calculation asks for a mode or `lmax` not covered by the bundled table, the code generates the needed coefficients on the fly.
+The bundled angular-coupling table lives at `src/vacuum_memory_modes/data/gamma_coeffs_lmax10.npz`. It stores the angular coupling coefficients used to build memory modes from products of oscillatory waveform modes. The examples load this table automatically, so they do not regenerate the Wigner-3j coefficients at runtime. If a calculation asks for a mode or `lmax` not covered by the bundled table, the code generates the needed coefficients on the fly.
 
 ## Install
 
@@ -114,13 +114,13 @@ $$
 h_{l,m}(U)=\int_{-\infty}^U du \mathcal{A}_l\left(\frac{1}{1+U/R-u/R}\right) \frac{d h_{l,m}^\infty(u)}{du}.
 $$
 
-For given $R$ and $t\to \infty$, $v\to \frac{R}{t}\equiv V$, the finite-radius mode has the late-time asymptotic behavior (assuming that $\frac{d h_{l,m}^\infty(u>u_*)}{du}=0$)
+For given $R$ and $t\to \infty$, $v\to \frac{R}{t}\equiv V$, the finite-radius mode has the late-time asymptotic behavior (assuming that $\frac{d h_{l,m}^\infty(u\ge u_*)}{du}=0$)
 
 $$
 \lim_{t\to\infty}h_{l,m}(t,R)\sim \mathcal{A}_l(V)h_{l,m}^\infty(u_*),
 $$
 
-See also the related discussions by [Caldwell](https://arxiv.org/abs/2506.20751v1). E.g.,
+See also the related discussion by [Caldwell](https://arxiv.org/abs/2506.20751v1). E.g.,
 
 $$
 \begin{aligned}
