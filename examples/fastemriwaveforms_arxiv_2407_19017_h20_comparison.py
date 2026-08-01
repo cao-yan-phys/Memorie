@@ -18,7 +18,11 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from vacuum_memory_modes import FewEmriConfig, compute_few_emri_memory_modes  # noqa: E402
+from vacuum_memory_modes import (  # noqa: E402
+    FewEmriConfig,
+    compute_few_emri_memory_modes,
+    h20_lo,
+)
 
 
 REFERENCE_PATH = ROOT / "examples" / "data" / "arxiv_2407_19017_fig3_h20.csv"
@@ -54,6 +58,15 @@ def _latex_number(value: float) -> str:
     if np.isclose(coefficient, 1.0):
         return rf"10^{{{exponent}}}"
     return rf"{coefficient:g}\times10^{{{exponent}}}"
+
+
+def _x_0pn_series(t_over_m: np.ndarray, x0: float, q: float) -> np.ndarray:
+    nu = float(q) / (1.0 + float(q)) ** 2
+    denominator = float(x0) ** -4 - (256.0 / 5.0) * nu * (t_over_m - t_over_m[0])
+    x = np.full_like(denominator, np.nan, dtype=float)
+    valid = denominator > 0.0
+    x[valid] = denominator[valid] ** -0.25
+    return x
 
 
 def main() -> int:
@@ -101,10 +114,16 @@ def main() -> int:
     h20_total = h20 + complex(result["prehistory_0pn_dimensionless"])
     nu_t_over_m = nu * (t_over_m - t_over_m[-1])
     r_h20_over_nu_m = np.real(h20_total / nu)
+    x_0pn = _x_0pn_series(t_over_m, result["x_eff_0pn"], result["q"])
+    effective_0pn_over_nu_m = np.asarray(
+        [h20_lo(result["q"], x_value) for x_value in x_0pn],
+        dtype=float,
+    ) / nu
 
     order = np.argsort(nu_t_over_m)
     nu_t_over_m = nu_t_over_m[order]
     r_h20_over_nu_m = r_h20_over_nu_m[order]
+    effective_0pn_over_nu_m = effective_0pn_over_nu_m[order]
     reference_x, reference_y = _load_reference_curve(args.reference)
 
     output_dir = args.output_dir
@@ -131,6 +150,7 @@ def main() -> int:
             [
                 "nu_t_over_M",
                 "FastEMRIWaveforms_R_h20_over_nu_M",
+                "effective_0PN_R_h20_over_nu_M",
                 "arXiv_2407_19017_Fig3_R_h20_over_nu_M",
             ]
         )
@@ -138,6 +158,7 @@ def main() -> int:
             zip(
                 output_x,
                 r_h20_over_nu_m[output_indices],
+                effective_0pn_over_nu_m[output_indices],
                 reference_on_output_grid,
                 strict=True,
             )
@@ -161,9 +182,17 @@ def main() -> int:
             label=r"$\mathtt{FastEMRIWaveforms}$",
         )
         ax.plot(
+            nu_t_over_m[mask],
+            effective_0pn_over_nu_m[mask],
+            color="red",
+            linestyle="--",
+            linewidth=1.6,
+            label="effective 0PN",
+        )
+        ax.plot(
             reference_x,
             reference_y,
-            color="red",
+            color="#0072B2",
             linestyle="--",
             linewidth=1.6,
             label=r"arXiv:2407.19017",
@@ -183,6 +212,7 @@ def main() -> int:
     print(f"q={result['q']:.12g}, nu={nu:.12g}, spin={args.spin:g}, e0=0")
     print(f"x_eff_0pn={result['x_eff_0pn']:.12g}")
     print(f"prehistory_0pn_over_nu={np.real(result['prehistory_0pn_dimensionless'] / nu):.12g}")
+    print(f"effective_0PN_end={effective_0pn_over_nu_m[-1]:.12g}")
     print(f"R_h20_over_nu_M_end={r_h20_over_nu_m[-1]:.12g}")
     print(f"reference_end={reference_y[-1]:.12g}")
     print(f"relative_difference_end={relative_difference_end:+.6%}")

@@ -188,6 +188,10 @@ In the null-infinity limit, $\mathcal{B}(\rho\to\infty)\to 1$. At finite radius,
 
 A general finite-radius waveform calculator based on this model will be added in a future version.
 
+## Restoration of Displacement Memory in Schwarzschild Scattering
+
+<p align="center">  <img src="memory_formation_l2m0.png" width="80%"></p><p align="center"></p>
+
 ## References
 
 - Marc Favata, "Post-Newtonian corrections to the gravitational-wave memory for quasicircular, inspiralling compact binaries", [arXiv:0812.0069](https://arxiv.org/abs/0812.0069).
