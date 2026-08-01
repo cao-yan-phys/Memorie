@@ -44,7 +44,7 @@ h30 = memory[(3, 0)]["h_spin_mode"]
 
 If a waveform model returns only positive-$m$ modes and the source is known to be nonprecessing and reflection symmetric, the missing partners may first be constructed with `complete_nonprecessing_modes`, which applies $h_{l,-m}=(-1)^l h_{l,m}^{*}$.
 
-## Example
+## SEOBNRv5EHM Example
 
 ```bash
 python examples/seobnrv5ehm_circular_memory_demo.py
@@ -66,6 +66,8 @@ Example outputs:
 - `examples/output/seobnrv5ehm_circular_memory_q2_omega0.00183712.csv`
 - `examples/output/seobnrv5ehm_circular_memory_q2_omega0.00183712.png`
 
+<p align="center"><img src="examples/output/seobnrv5ehm_circular_memory_q2_omega0.00183712.png" alt="SEOBNRv5EHM memory modes" width="85%"></p>
+
 ## SEOBNRv5EHM-Vs-NRHybSur3dq8_CCE Example
 
 ```bash
@@ -79,7 +81,9 @@ Example outputs:
 - `examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015.csv`
 - `examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015.png`
 
-## FastEMRIWaveforms Example
+<p align="center"><img src="examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015.png" alt="SEOBNRv5EHM and NRHybSur3dq8_CCE memory-mode comparison" width="85%"></p>
+
+## FastEMRIWaveforms Examples
 
 ```bash
 python examples/fastemriwaveforms_emri_h20_h30_demo.py
@@ -93,6 +97,12 @@ Example outputs:
 
 - `examples/output/fastemriwaveforms_emri_h20_h30_q100000_p0_100_chi0p8.csv`
 - `examples/output/fastemriwaveforms_emri_h20_h30_q100000_p0_100_chi0p8.png`
+
+<p align="center"><img src="examples/output/fastemriwaveforms_emri_h20_h30_q100000_p0_100_chi0p8.png" alt="FastEMRIWaveforms memory modes" width="85%"></p>
+
+The additional `fastemriwaveforms_arxiv_2407_19017_h20_comparison.py` example compares the $h_{2,0}$ memory mode calculated from `FastEMRIWaveforms` oscillatory modes with the result reported in [arXiv:2407.19017](https://arxiv.org/abs/2407.19017).
+
+<p align="center"><img src="examples/output/fastemriwaveforms_arxiv_2407_19017_h20_comparison_q100000_chi0.png" alt="FastEMRIWaveforms and arXiv:2407.19017 memory-mode comparison" width="85%"></p>
 
 ## The Rise and Fall of Displacement Memory at Finite Radius
 
