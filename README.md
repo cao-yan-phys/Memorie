@@ -42,7 +42,7 @@ h20 = memory[(2, 0)]["h_displacement"]
 h30 = memory[(3, 0)]["h_spin_mode"]
 ```
 
-If a waveform model returns only positive-$m$ modes and the source is known to be nonprecessing and reflection symmetric, the missing partners may first be constructed with `complete_nonprecessing_modes`, which applies $h_{\ell,-m}=(-1)^\ell h_{\ell,m}^{*}$.
+If a waveform model returns only positive-$m$ modes and the source is known to be nonprecessing and reflection symmetric, the missing partners may first be constructed with `complete_nonprecessing_modes`, which applies $h_{l,-m}=(-1)^l h_{l,m}^{*}$.
 
 ## Example
 
