@@ -42,7 +42,7 @@ h20 = memory[(2, 0)]["h_displacement"]
 h30 = memory[(3, 0)]["h_spin_mode"]
 ```
 
-If a waveform model returns only positive-$m$ modes and the source is known to be nonprecessing and reflection symmetric, the missing partners may first be constructed with `complete_nonprecessing_modes`, which applies $h_{\ell,-m}=(-1)^\ell h_{\ell m}^{*}$.
+If a waveform model returns only positive-$m$ modes and the source is known to be nonprecessing and reflection symmetric, the missing partners may first be constructed with `complete_nonprecessing_modes`, which applies $h_{\ell,-m}=(-1)^\ell h_{\ell,m}^{*}$.
 
 ## Example
 
@@ -50,9 +50,9 @@ If a waveform model returns only positive-$m$ modes and the source is known to b
 python examples/seobnrv5ehm_circular_memory_demo.py
 ```
 
-The example generates a nonprecessing circular `SEOBNRv5EHM` event, computes $h_{20}$, $h_{30}$, and the leading CM-memory modes, infers an effective 0PN $x$ parameter from the initial $\dot h_{20}$, and compares the initial numerical memory modes with the corresponding leading PN formulas.
+The example uses `SEOBNRv5EHM` to generate the oscillatory modes of a nonprecessing, quasicircular compact binary. It then computes $h_{2,0}$, $h_{3,0}$, and the leading CM-memory modes, infers an effective 0PN $x$ parameter from the initial $\dot h_{2,0}$, and compares the initial numerical memory modes with the corresponding leading PN formulas.
 
-The default initial PN parameter is $x_0=0.015$, implemented as `omega_start = 0.015**1.5`. $h_{20}$ and $h_{30}$ panels show the real/imaginary component of $h(t)-h(t_0)$, while CM-memory panels show $|h_{\rm CM}(t)-h_{\rm CM}(t_0)|$.
+The default initial PN parameter is $x_0=0.015$, implemented as `omega_start = 0.015**1.5`. $h_{2,0}$ and $h_{3,0}$ panels show the real/imaginary component of $h_{l,m}(t)-h_{l,m}(t_0)$, while CM-memory panels show $|h_{l,m}(t)-h_{l,m}(t_0)|$.
 
 For CM-memory modes the example prints both:
 
@@ -72,7 +72,7 @@ Example outputs:
 python examples/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_comparison.py
 ```
 
-This example loads `NRHybSur3dq8_CCE`, finds the `NRHybSur3dq8_CCE` time where $\Omega_{\rm orb}=0.015^{3/2}$, fits the initial `NRHybSur3dq8_CCE` $(2,2)$ phase to get the `SEOBNRv5EHM` `omega_start`, and then compares $h(t)-h(t_0)$ for the `NRHybSur3dq8_CCE` $(2,0)$ and $(3,0)$ modes against `SEOBNRv5EHM` perturbative $h_{20}$ and $h_{30}$.
+This example loads `NRHybSur3dq8_CCE`, finds the `NRHybSur3dq8_CCE` time where $\Omega_{\rm orb}=0.015^{3/2}$, fits the initial `NRHybSur3dq8_CCE` $(2,2)$ phase to determine the `SEOBNRv5EHM` `omega_start`, and then compares $h(t)-h(t_0)$ for the `NRHybSur3dq8_CCE` $(2,0)$ and $(3,0)$ modes with the perturbative memory modes constructed from the `SEOBNRv5EHM` oscillatory modes.
 
 Example outputs:
 
@@ -85,15 +85,9 @@ Example outputs:
 python examples/fastemriwaveforms_emri_h20_h30_demo.py
 ```
 
-This example uses `FastEMRIWaveforms` to generate equatorial Kerr trajectories with initial eccentricities $e_0=0$ and $e_0=0.8$, mass ratio $q=10^5$, and spin $\chi=0.8$. It computes perturbative $h_{20}$ and $h_{30}$ from the oscillatory modes and compares the $e_0=0$ result with the effective-0PN construction.
+This example uses `FastEMRIWaveforms` to generate equatorial Kerr trajectories with initial eccentricities $e_0=0$ and $e_0=0.8$, mass ratio $q=10^5$, and spin $\chi=0.8$. It computes $h_{2,0}$ and $h_{3,0}$ from the oscillatory modes, and compares the $e_0=0$ result with the effective-0PN construction.
 
-With the default `frequency_source = "geodesic"`, the initial frequency parameter for either trajectory is defined by the azimuthal geodesic fundamental frequency:
-
-$$
-x_0=\left[M_{\rm tot}\Omega_\phi(t_0)\right]^{2/3}.
-$$
-
-For the eccentric $e_0=0.8$ trajectory, $x_0$ is therefore an azimuthal-frequency parameter; it is not defined from the instantaneous angular velocity at pericenter or from the radial fundamental frequency $\Omega_r$.
+With the default `frequency_source = "geodesic"`, the initial frequency parameter for either trajectory is defined by the azimuthal geodesic fundamental frequency: $x_0=\left[M\Omega_\phi(t_0)\right]^{2/3}$.
 
 Example outputs:
 
