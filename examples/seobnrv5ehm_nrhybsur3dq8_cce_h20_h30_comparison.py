@@ -93,24 +93,7 @@ def _load_cce_segment(
     return t, _normalize_surrogate_modes(raw_modes)
 
 
-def _compute_memory_from_positive_modes(
-    t: np.ndarray,
-    positive_modes: dict[tuple[int, int], np.ndarray],
-    lmax: int,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Compute the memory targets from any nonprecessing positive-m mode input."""
-
-    modes = complete_nonprecessing_modes(positive_modes)
-    hdot = differentiate_modes(t, modes)
-    memory = compute_memory_modes(t, modes, [(2, 0), (3, 0)], lmax=lmax, hdot=hdot)
-    return (
-        memory[(2, 0)]["h_displacement"],
-        memory[(2, 0)]["dh_displacement_dt"],
-        memory[(3, 0)]["h_spin_mode"],
-    )
-
-
-def _generate_pyseobnr_positive_modes(
+def _generate_pyseobnr_modes(
     q: float,
     omega_start: float,
     pyseobnr_delta_t: float,
@@ -134,7 +117,7 @@ def _generate_pyseobnr_positive_modes(
         },
     )
     positive_modes = {tuple(map(int, key.split(","))): value for key, value in raw_modes.items()}
-    return t, positive_modes
+    return t, complete_nonprecessing_modes(positive_modes)
 
 
 def _interp_complex_with_plateau(x_new: np.ndarray, x: np.ndarray, y: np.ndarray) -> np.ndarray:
@@ -210,18 +193,24 @@ def main() -> int:
         args.delta_t,
     )
     omega_pyseobnr_start = _fit_initial_orbital_frequency(t_cce, h_cce[(2, 2)], args.fit_duration)
-    t_pyseobnr, pyseobnr_positive_modes = _generate_pyseobnr_positive_modes(
+    t_pyseobnr, pyseobnr_modes = _generate_pyseobnr_modes(
         args.q,
         omega_pyseobnr_start,
         args.pyseobnr_delta_t,
         args.total_mass_solar,
         args.pyseobnr_approximant,
     )
-    h20_pyseobnr, dh20_dt_pyseobnr, h30_pyseobnr = _compute_memory_from_positive_modes(
+    pyseobnr_hdot = differentiate_modes(t_pyseobnr, pyseobnr_modes)
+    pyseobnr_memory = compute_memory_modes(
         t_pyseobnr,
-        pyseobnr_positive_modes,
-        args.lmax,
+        pyseobnr_modes,
+        [(2, 0), (3, 0)],
+        lmax=args.lmax,
+        hdot=pyseobnr_hdot,
     )
+    h20_pyseobnr = pyseobnr_memory[(2, 0)]["h_displacement"]
+    dh20_dt_pyseobnr = pyseobnr_memory[(2, 0)]["dh_displacement_dt"]
+    h30_pyseobnr = pyseobnr_memory[(3, 0)]["h_spin_mode"]
 
     rel_cce = t_cce - t_cce[0]
     rel_pyseobnr = t_pyseobnr - t_pyseobnr[0]
@@ -348,7 +337,7 @@ def main() -> int:
     print(f"{args.pyseobnr_approximant} delta_t = {args.pyseobnr_delta_t:g} M")
     if pyseobnr_plateau_duration:
         print(f"{args.pyseobnr_approximant} curve held at final value for the last {pyseobnr_plateau_duration:.1f} M")
-    print(f"{args.pyseobnr_approximant} positive-m modes = {sorted(pyseobnr_positive_modes)}")
+    print(f"{args.pyseobnr_approximant} oscillatory modes = {sorted(pyseobnr_modes)}")
     print(f"final NRHybSur3dq8_CCE Delta h20 = {_format_complex(dh20_cce[-1])}")
     print(f"final {args.pyseobnr_approximant} Delta h20 = {_format_complex(dh20_pyseobnr[-1])}")
     print(f"final NRHybSur3dq8_CCE Delta h30 = {_format_complex(dh30_cce[-1])}")

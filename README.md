@@ -24,6 +24,26 @@ The waveform models used by the examples are:
 - [`NRHybSur3dq8_CCE` through `gwsurrogate`](https://github.com/sxs-collaboration/gwsurrogate)
 - [`FastEMRIWaveforms`](https://github.com/BlackHolePerturbationToolkit/FastEMRIWaveforms)
 
+## Public Interface
+
+`compute_memory_modes` computes memory from a complete dictionary of the available oscillatory modes:
+
+```python
+from vacuum_memory_modes import compute_memory_modes
+
+memory = compute_memory_modes(
+    t,
+    oscillatory_modes,
+    targets=[(2, 0), (3, 0)],
+    lmax=10,
+)
+
+h20 = memory[(2, 0)]["h_displacement"]
+h30 = memory[(3, 0)]["h_spin_mode"]
+```
+
+If a waveform model returns only positive-$m$ modes and the source is known to be nonprecessing and reflection symmetric, the missing partners may first be constructed with `complete_nonprecessing_modes`, which applies $h_{\ell,-m}=(-1)^\ell h_{\ell m}^{*}$.
+
 ## Example
 
 ```bash
@@ -54,8 +74,6 @@ python examples/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_comparison.py
 
 This example loads `NRHybSur3dq8_CCE`, finds the `NRHybSur3dq8_CCE` time where $\Omega_{\rm orb}=0.015^{3/2}$, fits the initial `NRHybSur3dq8_CCE` $(2,2)$ phase to get the `SEOBNRv5EHM` `omega_start`, and then compares $h(t)-h(t_0)$ for the `NRHybSur3dq8_CCE` $(2,0)$ and $(3,0)$ modes against `SEOBNRv5EHM` perturbative $h_{20}$ and $h_{30}$.
 
-To use a different oscillatory input model, replace `_generate_pyseobnr_positive_modes` or call `_compute_memory_from_positive_modes` with another nonprecessing positive-$m$ mode dictionary.
-
 Example outputs:
 
 - `examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015.csv`
@@ -67,7 +85,15 @@ Example outputs:
 python examples/fastemriwaveforms_emri_h20_h30_demo.py
 ```
 
-This example uses `FastEMRIWaveforms` to generate a circular equatorial Kerr trajectory with mass ratio $q=10^5$ and spin $\chi=0.8$, computes perturbative $h_{20}$ and $h_{30}$ from the oscillatory modes, and compares $h(t)-h(t_0)$ with the effective-0PN construction.
+This example uses `FastEMRIWaveforms` to generate equatorial Kerr trajectories with initial eccentricities $e_0=0$ and $e_0=0.8$, mass ratio $q=10^5$, and spin $\chi=0.8$. It computes perturbative $h_{20}$ and $h_{30}$ from the oscillatory modes and compares the $e_0=0$ result with the effective-0PN construction.
+
+With the default `frequency_source = "geodesic"`, the initial frequency parameter for either trajectory is defined by the azimuthal geodesic fundamental frequency:
+
+$$
+x_0=\left[M_{\rm tot}\Omega_\phi(t_0)\right]^{2/3}.
+$$
+
+For the eccentric $e_0=0.8$ trajectory, $x_0$ is therefore an azimuthal-frequency parameter; it is not defined from the instantaneous angular velocity at pericenter or from the radial fundamental frequency $\Omega_r$.
 
 Example outputs:
 

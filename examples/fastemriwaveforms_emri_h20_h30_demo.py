@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+from dataclasses import replace
 from pathlib import Path
 import sys
 
@@ -52,6 +53,12 @@ def _token(value: float) -> str:
     return f"{value:g}".replace("-", "m").replace(".", "p")
 
 
+def _interp_complex_with_nan(x_new: np.ndarray, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    real = np.interp(x_new, x, np.real(y), left=np.nan, right=np.nan)
+    imag = np.interp(x_new, x, np.imag(y), left=np.nan, right=np.nan)
+    return real + 1j * imag
+
+
 def _x_0pn_series(t: np.ndarray, x0: float, q: float) -> np.ndarray:
     nu = float(q) / (1.0 + float(q)) ** 2
     denominator = float(x0) ** -4 - (256.0 / 5.0) * nu * (t - t[0])
@@ -68,6 +75,7 @@ def main() -> int:
     parser.add_argument("--spin", type=float, default=0.8)
     parser.add_argument("--p0", type=float, default=100.0)
     parser.add_argument("--e0", type=float, default=0.0)
+    parser.add_argument("--comparison-e0", type=float, default=0.8)
     parser.add_argument("--x0-inclination", type=float, default=1.0)
     parser.add_argument("--t-years", type=float, default=60000.0)
     parser.add_argument("--endpoint-factor", type=float, default=1.01)
@@ -96,6 +104,10 @@ def main() -> int:
         frequency_source=args.frequency_source,
     )
     result = compute_few_emri_memory_modes(config, lmax=args.lmax)
+    comparison_result = compute_few_emri_memory_modes(
+        replace(config, e0=args.comparison_e0),
+        lmax=args.lmax,
+    )
 
     t = result["t_dense_dimensionless"]
     rel_t = t - t[0]
@@ -110,6 +122,16 @@ def main() -> int:
     dh20_0pn_norm = (h20_0pn - h20_0pn[0]) / nu
     dh30_0pn_norm = (h30_0pn - h30_0pn[0]) / nu
 
+    comparison_t = comparison_result["t_dense_dimensionless"]
+    comparison_rel_t = comparison_t - comparison_t[0]
+    comparison_nu = comparison_result["nu"]
+    comparison_dh20_norm = (
+        comparison_result["h20_dimensionless"] - comparison_result["h20_dimensionless"][0]
+    ) / comparison_nu
+    comparison_dh30_norm = (
+        comparison_result["h30_dimensionless"] - comparison_result["h30_dimensionless"][0]
+    ) / comparison_nu
+
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     stem = (
@@ -119,9 +141,28 @@ def main() -> int:
     csv_path = output_dir / f"{stem}.csv"
     png_path = output_dir / f"{stem}.png"
     plot_idx = _downsample_indices(len(rel_t), args.max_plot_points)
+    comparison_plot_idx = _downsample_indices(len(comparison_rel_t), args.max_plot_points)
+    csv_t = np.unique(
+        np.concatenate(
+            [
+                rel_t[plot_idx],
+                comparison_rel_t[comparison_plot_idx],
+            ]
+        )
+    )
+    h20_on_csv_grid = _interp_complex_with_nan(csv_t, rel_t, dh20_norm)
+    h30_on_csv_grid = _interp_complex_with_nan(csv_t, rel_t, dh30_norm)
+    h20_0pn_on_csv_grid = _interp_complex_with_nan(csv_t, rel_t, dh20_0pn_norm)
+    h30_0pn_on_csv_grid = _interp_complex_with_nan(csv_t, rel_t, dh30_0pn_norm)
+    comparison_h20_on_csv_grid = _interp_complex_with_nan(
+        csv_t, comparison_rel_t, comparison_dh20_norm
+    )
+    comparison_h30_on_csv_grid = _interp_complex_with_nan(
+        csv_t, comparison_rel_t, comparison_dh30_norm
+    )
 
     with csv_path.open("w", newline="", encoding="utf-8") as stream:
-        writer = csv.writer(stream)
+        writer = csv.writer(stream, lineterminator="\n")
         writer.writerow(
             [
                 "t_minus_t0_M",
@@ -133,14 +174,28 @@ def main() -> int:
                 "FastEMRIWaveforms_delta_h30_imag_over_nu",
                 "effective_0PN_delta_h30_real_over_nu",
                 "effective_0PN_delta_h30_imag_over_nu",
+                f"FastEMRIWaveforms_e0_{_token(args.comparison_e0)}_delta_h20_real_over_nu",
+                f"FastEMRIWaveforms_e0_{_token(args.comparison_e0)}_delta_h20_imag_over_nu",
+                f"FastEMRIWaveforms_e0_{_token(args.comparison_e0)}_delta_h30_real_over_nu",
+                f"FastEMRIWaveforms_e0_{_token(args.comparison_e0)}_delta_h30_imag_over_nu",
             ]
         )
-        for time_value, h20_value, h20_0pn_value, h30_value, h30_0pn_value in zip(
-            rel_t[plot_idx],
-            dh20_norm[plot_idx],
-            dh20_0pn_norm[plot_idx],
-            dh30_norm[plot_idx],
-            dh30_0pn_norm[plot_idx],
+        for (
+            time_value,
+            h20_value,
+            h20_0pn_value,
+            h30_value,
+            h30_0pn_value,
+            comparison_h20_value,
+            comparison_h30_value,
+        ) in zip(
+            csv_t,
+            h20_on_csv_grid,
+            h20_0pn_on_csv_grid,
+            h30_on_csv_grid,
+            h30_0pn_on_csv_grid,
+            comparison_h20_on_csv_grid,
+            comparison_h30_on_csv_grid,
         ):
             writer.writerow(
                 [
@@ -153,6 +208,10 @@ def main() -> int:
                     h30_value.imag,
                     h30_0pn_value.real,
                     h30_0pn_value.imag,
+                    comparison_h20_value.real,
+                    comparison_h20_value.imag,
+                    comparison_h30_value.real,
+                    comparison_h30_value.imag,
                 ]
             )
 
@@ -163,13 +222,23 @@ def main() -> int:
         y30 = _positive_for_log(np.imag(dh30_norm))
         y20_0pn = _positive_for_log(np.real(dh20_0pn_norm))
         y30_0pn = _positive_for_log(np.imag(dh30_0pn_norm))
-        y20_lim = _positive_log_limits(y20, y20_0pn)
-        y30_lim = _positive_log_limits(y30, y30_0pn)
-        few_label = r"$\mathtt{FastEMRIWaveforms}$ perturbative"
-        effective_label = "effective 0PN"
+        comparison_y20 = _positive_for_log(np.real(comparison_dh20_norm))
+        comparison_y30 = _positive_for_log(np.imag(comparison_dh30_norm))
+        y20_lim = _positive_log_limits(y20, y20_0pn, comparison_y20)
+        y30_lim = _positive_log_limits(y30, y30_0pn, comparison_y30)
+        few_label = rf"$\mathtt{{FastEMRIWaveforms}}$, $e_0={args.e0:g}$"
+        comparison_label = rf"$\mathtt{{FastEMRIWaveforms}}$, $e_0={args.comparison_e0:g}$"
+        effective_label = rf"effective 0PN ($e_0={args.e0:g}$)"
 
         fig, axes = plt.subplots(2, 1, figsize=(9, 7), sharex=True, constrained_layout=True)
         axes[0].plot(rel_t[plot_idx], y20[plot_idx], color="black", linewidth=1.4, label=few_label)
+        axes[0].plot(
+            comparison_rel_t[comparison_plot_idx],
+            comparison_y20[comparison_plot_idx],
+            color="#0072B2",
+            linewidth=1.4,
+            label=comparison_label,
+        )
         axes[0].plot(
             rel_t[plot_idx],
             y20_0pn[plot_idx],
@@ -186,6 +255,13 @@ def main() -> int:
 
         axes[1].plot(rel_t[plot_idx], y30[plot_idx], color="black", linewidth=1.4, label=few_label)
         axes[1].plot(
+            comparison_rel_t[comparison_plot_idx],
+            comparison_y30[comparison_plot_idx],
+            color="#0072B2",
+            linewidth=1.4,
+            label=comparison_label,
+        )
+        axes[1].plot(
             rel_t[plot_idx],
             y30_0pn[plot_idx],
             color="red",
@@ -198,6 +274,7 @@ def main() -> int:
         axes[1].set_ylabel(r"$\mathrm{Im}\,\Delta h_{30}/(\nu M/R)$")
         axes[1].set_xlabel(r"$t-t_0$ [$M$]")
         axes[1].grid(True, which="both", alpha=0.25)
+        axes[1].legend(loc="best", frameon=False)
         fig.suptitle(
             rf"$\mathtt{{FastEMRIWaveforms}}$, "
             rf"$q={result['q']:.6g}$, $x_0={result['x_orb0']:.6g}$, "
@@ -224,6 +301,17 @@ def main() -> int:
     print(f"final FastEMRIWaveforms Delta h30 = {_format_complex(dh30[-1])}")
     print(f"final FastEMRIWaveforms Delta h20 / nu = {_format_complex(dh20_norm[-1])}")
     print(f"final FastEMRIWaveforms Delta h30 / nu = {_format_complex(dh30_norm[-1])}")
+    print(f"comparison e0 = {args.comparison_e0:.12e}")
+    print(f"comparison trajectory samples = {comparison_result['trajectory_sample_count']}")
+    print(f"comparison time range = [{comparison_t[0]:.3f}, {comparison_t[-1]:.3f}] M")
+    print(
+        "comparison final FastEMRIWaveforms Delta h20 / nu = "
+        f"{_format_complex(comparison_dh20_norm[-1])}"
+    )
+    print(
+        "comparison final FastEMRIWaveforms Delta h30 / nu = "
+        f"{_format_complex(comparison_dh30_norm[-1])}"
+    )
     print(f"Saved CSV: {csv_path}")
     if not args.no_plot:
         print(f"Saved plot: {png_path}")

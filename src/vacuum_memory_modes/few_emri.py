@@ -12,7 +12,7 @@ import numpy as np
 from scipy.integrate import cumulative_trapezoid
 from scipy.interpolate import PchipInterpolator
 
-from .core import precompute_memory_coeffs
+from .core import parity_sign, precompute_memory_coeffs
 from .pn import k20_lo
 
 MTSUN_SI = 4.925490947641266978197229498498379006e-6
@@ -20,7 +20,7 @@ MTSUN_SI = 4.925490947641266978197229498498379006e-6
 
 @dataclass(frozen=True)
 class FewEmriConfig:
-    """Configuration for a circular-equatorial FEW EMRI memory run."""
+    """Configuration for an eccentric-equatorial FEW EMRI memory run."""
 
     primary_mass_msun: float = 1.0e6
     secondary_mass_msun: float = 50.0
@@ -60,6 +60,25 @@ def _build_n_map(special_index_map: dict[tuple[int, int, int], int]) -> dict[tup
     for ell, emm, enn in special_index_map:
         n_map[(int(ell), int(emm))].append(int(enn))
     return n_map
+
+
+def _mode_from_compressed_few_amplitudes(
+    amplitudes: np.ndarray,
+    special_index_map: dict[tuple[int, int, int], int],
+    ell: int,
+    emm: int,
+    enn: int,
+) -> np.ndarray | None:
+    """Return one FEW amplitude, reconstructing a stored negative-m partner."""
+
+    column = special_index_map.get((int(ell), int(emm), int(enn)))
+    if column is None:
+        return None
+    value = np.asarray(amplitudes[:, column])
+    if emm < 0:
+        # FEW maps (ell, -m, n) to the stored (ell, m, -n) column.
+        value = parity_sign(ell) * np.conjugate(value)
+    return value
 
 
 def _endpoint_refined_series(
@@ -119,12 +138,17 @@ def _compute_few_memory_sources(
     def get_mode(ell: int, emm: int, enn: int) -> tuple[np.ndarray | None, np.ndarray | None]:
         key = (int(ell), int(emm), int(enn))
         if key not in h_cache:
-            column = special_index_map.get(key)
-            if column is None:
+            h_value = _mode_from_compressed_few_amplitudes(
+                amplitudes,
+                special_index_map,
+                ell,
+                emm,
+                enn,
+            )
+            if h_value is None:
                 h_cache[key] = None
                 hdot_cache[key] = None
             else:
-                h_value = np.asarray(amplitudes[:, column])
                 omega_mn = int(emm) * omega_phi + int(enn) * omega_r
                 h_cache[key] = h_value
                 hdot_cache[key] = -1j * h_value * omega_mn
