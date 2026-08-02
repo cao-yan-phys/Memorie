@@ -190,7 +190,7 @@ A general finite-radius waveform calculator based on this model will be added in
 
 ## Restoration of Displacement Memory in Schwarzschild Scattering
 
-<p align="center">  <img src="memory_formation_l2m0.png" width="80%"></p><p align="center"></p>
+<p align="center">  <img src="memory_formation_l2m0.png?v=c536df36eae0" width="80%"></p><p align="center"></p>
 
 ## References
 
