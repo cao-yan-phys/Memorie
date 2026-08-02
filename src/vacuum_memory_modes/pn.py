@@ -66,7 +66,7 @@ def _with_negative_m(modes: dict[Mode, complex]) -> dict[Mode, complex]:
     out = dict(modes)
     for (ell, emm), value in list(out.items()):
         if emm > 0:
-            out[(ell, -emm)] = (-1) ** emm * np.conjugate(value)
+            out[(ell, -emm)] = (-1) ** ell * np.conjugate(value)
     return out
 
 

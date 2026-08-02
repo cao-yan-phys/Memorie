@@ -87,8 +87,17 @@ def _load_cce_segment(
     t_start: float,
     t_stop: float,
     delta_t: float,
+    refinement_start: float,
+    refinement_delta_t: float,
 ) -> tuple[np.ndarray, dict[tuple[int, int], np.ndarray]]:
-    times = np.arange(t_start, t_stop + 0.5 * delta_t, delta_t)
+    fine_start = min(max(float(refinement_start), t_start), t_stop)
+    coarse_times = np.arange(t_start, fine_start, delta_t)
+    fine_times = np.arange(
+        fine_start,
+        t_stop + 0.5 * refinement_delta_t,
+        refinement_delta_t,
+    )
+    times = np.unique(np.concatenate([coarse_times, fine_times]))
     t, raw_modes, _dyn = surrogate(q, _spin_vector(), _spin_vector(), f_low=0, times=times)
     return t, _normalize_surrogate_modes(raw_modes)
 
@@ -126,9 +135,36 @@ def _interp_complex_with_plateau(x_new: np.ndarray, x: np.ndarray, y: np.ndarray
     return np.interp(x_new, x, np.real(y)) + 1j * np.interp(x_new, x, np.imag(y))
 
 
-def _downsample_indices(n: int, max_points: int) -> np.ndarray:
-    step = max(1, int(np.ceil(n / max_points)))
-    return np.arange(0, n, step, dtype=int)
+def _endpoint_refined_indices(
+    t: np.ndarray,
+    max_points: int,
+    refine_duration: float = 2500.0,
+) -> np.ndarray:
+    n = len(t)
+    if n <= max_points:
+        return np.arange(n, dtype=int)
+    split = int(np.searchsorted(t, t[-1] - refine_duration, side="left"))
+    tail_size = n - split
+    tail_budget = min(tail_size, max_points // 2)
+    head_budget = min(split, max_points - tail_budget)
+    head = np.linspace(0, split - 1, head_budget, dtype=int) if head_budget else np.array([], dtype=int)
+    tail = np.linspace(split, n - 1, tail_budget, dtype=int) if tail_budget else np.array([], dtype=int)
+    return np.unique(np.concatenate([head, tail]))
+
+
+def _include_extrema(indices: np.ndarray, *series: np.ndarray) -> np.ndarray:
+    critical = [0, len(series[0]) - 1]
+    for values in series:
+        values = np.asarray(values, dtype=float)
+        finite = np.flatnonzero(np.isfinite(values))
+        if len(finite):
+            critical.extend(
+                [
+                    int(finite[np.argmin(values[finite])]),
+                    int(finite[np.argmax(values[finite])]),
+                ]
+            )
+    return np.unique(np.concatenate([indices, np.asarray(critical, dtype=int)]))
 
 
 def _positive_for_log(values: np.ndarray) -> np.ndarray:
@@ -137,13 +173,18 @@ def _positive_for_log(values: np.ndarray) -> np.ndarray:
     return out
 
 
-def _positive_log_limits(*series: np.ndarray) -> tuple[float, float]:
+def _positive_log_limits(
+    *series: np.ndarray,
+    upper_series: np.ndarray | None = None,
+) -> tuple[float, float]:
     values = np.concatenate([np.asarray(item, dtype=float).ravel() for item in series])
     values = values[np.isfinite(values) & (values > 0.0)]
     if not len(values):
-        return 1e-12, 1.0
+        return 1e-15, 1.0
+    upper_values = values if upper_series is None else np.asarray(upper_series, dtype=float)
+    upper_values = upper_values[np.isfinite(upper_values) & (upper_values > 0.0)]
     ymin = max(float(np.min(values)) * 0.5, 1e-300)
-    ymax = max(float(np.max(values)) * 1.5, ymin * 10.0)
+    ymax = max(float(np.max(upper_values)) * 1.05, ymin * 10.0)
     return ymin, ymax
 
 
@@ -158,6 +199,8 @@ def main() -> int:
     parser.add_argument("--x-start", type=float, default=DEFAULT_X_START)
     parser.add_argument("--cce-stop", type=float, default=100.0)
     parser.add_argument("--delta-t", type=float, default=20.0, help="NRHybSur3dq8_CCE/output spacing in units of M")
+    parser.add_argument("--cce-refinement-start", type=float, default=-3000.0)
+    parser.add_argument("--cce-refinement-delta-t", type=float, default=0.5)
     parser.add_argument("--pyseobnr-delta-t", type=float, default=1.0, help="pyseobnr time step in units of M")
     parser.add_argument("--pyseobnr-approximant", default="SEOBNRv5EHM")
     parser.add_argument("--fit-duration", type=float, default=4000.0)
@@ -191,6 +234,8 @@ def main() -> int:
         cce_start,
         args.cce_stop,
         args.delta_t,
+        args.cce_refinement_start,
+        args.cce_refinement_delta_t,
     )
     omega_pyseobnr_start = _fit_initial_orbital_frequency(t_cce, h_cce[(2, 2)], args.fit_duration)
     t_pyseobnr, pyseobnr_modes = _generate_pyseobnr_modes(
@@ -215,13 +260,10 @@ def main() -> int:
     rel_cce = t_cce - t_cce[0]
     rel_pyseobnr = t_pyseobnr - t_pyseobnr[0]
     pyseobnr_plateau_duration = max(0.0, float(rel_cce[-1] - rel_pyseobnr[-1]))
-    h20_pyseobnr_on_cce = _interp_complex_with_plateau(rel_cce, rel_pyseobnr, h20_pyseobnr)
-    h30_pyseobnr_on_cce = _interp_complex_with_plateau(rel_cce, rel_pyseobnr, h30_pyseobnr)
-
     dh20_cce = h_cce[(2, 0)] - h_cce[(2, 0)][0]
     dh30_cce = h_cce[(3, 0)] - h_cce[(3, 0)][0]
-    dh20_pyseobnr = h20_pyseobnr_on_cce - h20_pyseobnr_on_cce[0]
-    dh30_pyseobnr = h30_pyseobnr_on_cce - h30_pyseobnr_on_cce[0]
+    dh20_pyseobnr = h20_pyseobnr - h20_pyseobnr[0]
+    dh30_pyseobnr = h30_pyseobnr - h30_pyseobnr[0]
     nu = symmetric_mass_ratio(args.q)
     x0 = omega_pyseobnr_start ** (2.0 / 3.0)
     x_eff = infer_x_eff_from_dh20(dh20_dt_pyseobnr[0], args.q)
@@ -236,7 +278,36 @@ def main() -> int:
     stem = f"seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q{args.q:g}_x{args.x_start:g}"
     csv_path = output_dir / f"{stem}.csv"
     png_path = output_dir / f"{stem}.png"
-    plot_idx = _downsample_indices(len(rel_cce), args.max_plot_points)
+    points_per_model = max(16, args.max_plot_points // 2)
+    cce_plot_idx = _endpoint_refined_indices(rel_cce, points_per_model)
+    pyseobnr_plot_idx = _endpoint_refined_indices(rel_pyseobnr, points_per_model)
+    cce_plot_idx = _include_extrema(
+        cce_plot_idx,
+        np.real(dh20_cce_norm),
+        np.imag(dh30_cce_norm),
+    )
+    pyseobnr_plot_idx = _include_extrema(
+        pyseobnr_plot_idx,
+        np.real(dh20_pyseobnr_norm),
+        np.imag(dh30_pyseobnr_norm),
+    )
+    csv_t = np.unique(
+        np.concatenate(
+            [
+                rel_cce[cce_plot_idx],
+                rel_pyseobnr[pyseobnr_plot_idx],
+                np.asarray([rel_cce[-1]]),
+            ]
+        )
+    )
+    dh20_cce_csv = _interp_complex_with_plateau(csv_t, rel_cce, dh20_cce_norm)
+    dh30_cce_csv = _interp_complex_with_plateau(csv_t, rel_cce, dh30_cce_norm)
+    dh20_pyseobnr_csv = _interp_complex_with_plateau(
+        csv_t, rel_pyseobnr, dh20_pyseobnr_norm
+    )
+    dh30_pyseobnr_csv = _interp_complex_with_plateau(
+        csv_t, rel_pyseobnr, dh30_pyseobnr_norm
+    )
 
     with csv_path.open("w", newline="", encoding="utf-8") as stream:
         writer = csv.writer(stream)
@@ -254,11 +325,12 @@ def main() -> int:
             ]
         )
         for values in zip(
-            rel_cce[plot_idx],
-            dh20_cce_norm[plot_idx],
-            dh20_pyseobnr_norm[plot_idx],
-            dh30_cce_norm[plot_idx],
-            dh30_pyseobnr_norm[plot_idx],
+            csv_t,
+            dh20_cce_csv,
+            dh20_pyseobnr_csv,
+            dh30_cce_csv,
+            dh30_pyseobnr_csv,
+            strict=True,
         ):
             time_value, c20, e20, c30, e30 = values
             writer.writerow(
@@ -284,13 +356,27 @@ def main() -> int:
     y30_cce = _positive_for_log(np.imag(dh30_cce_norm))
     y30_pyseobnr = _positive_for_log(np.imag(dh30_pyseobnr_norm))
     y20_lim = _positive_log_limits(y20_cce, y20_pyseobnr)
-    y30_lim = _positive_log_limits(y30_cce, y30_pyseobnr)
+    y30_lim = _positive_log_limits(y30_cce, y30_pyseobnr, upper_series=y30_pyseobnr)
+
+    pyseobnr_plot_t = rel_pyseobnr[pyseobnr_plot_idx]
+    y20_pyseobnr_plot = y20_pyseobnr[pyseobnr_plot_idx]
+    y30_pyseobnr_plot = y30_pyseobnr[pyseobnr_plot_idx]
+    if pyseobnr_plateau_duration:
+        pyseobnr_plot_t = np.append(pyseobnr_plot_t, rel_cce[-1])
+        y20_pyseobnr_plot = np.append(y20_pyseobnr_plot, y20_pyseobnr[-1])
+        y30_pyseobnr_plot = np.append(y30_pyseobnr_plot, y30_pyseobnr[-1])
 
     fig, axes = plt.subplots(2, 1, figsize=(9, 7), sharex=True, constrained_layout=True)
-    axes[0].plot(rel_cce[plot_idx], y20_cce[plot_idx], color="black", linewidth=1.4, label=cce_label)
     axes[0].plot(
-        rel_cce[plot_idx],
-        y20_pyseobnr[plot_idx],
+        rel_cce[cce_plot_idx],
+        y20_cce[cce_plot_idx],
+        color="black",
+        linewidth=1.4,
+        label=cce_label,
+    )
+    axes[0].plot(
+        pyseobnr_plot_t,
+        y20_pyseobnr_plot,
         color="red",
         linestyle="--",
         linewidth=1.3,
@@ -302,10 +388,16 @@ def main() -> int:
     axes[0].grid(True, which="both", alpha=0.25)
     axes[0].legend(loc="best", frameon=False)
 
-    axes[1].plot(rel_cce[plot_idx], y30_cce[plot_idx], color="black", linewidth=1.4, label=cce_label)
     axes[1].plot(
-        rel_cce[plot_idx],
-        y30_pyseobnr[plot_idx],
+        rel_cce[cce_plot_idx],
+        y30_cce[cce_plot_idx],
+        color="black",
+        linewidth=1.4,
+        label=cce_label,
+    )
+    axes[1].plot(
+        pyseobnr_plot_t,
+        y30_pyseobnr_plot,
         color="red",
         linestyle="--",
         linewidth=1.3,
@@ -333,7 +425,11 @@ def main() -> int:
     print(f"x0 = {x0:.12e}")
     print(f"x_eff = {x_eff:.12e}")
     print(f"nu = {nu:.12e}")
-    print(f"NRHybSur3dq8_CCE/output delta_t = {args.delta_t:g} M")
+    print(f"NRHybSur3dq8_CCE early delta_t = {args.delta_t:g} M")
+    print(
+        "NRHybSur3dq8_CCE merger refinement = "
+        f"{args.cce_refinement_delta_t:g} M from t={args.cce_refinement_start:g} M"
+    )
     print(f"{args.pyseobnr_approximant} delta_t = {args.pyseobnr_delta_t:g} M")
     if pyseobnr_plateau_duration:
         print(f"{args.pyseobnr_approximant} curve held at final value for the last {pyseobnr_plateau_duration:.1f} M")

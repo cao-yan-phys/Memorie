@@ -81,7 +81,7 @@ Example outputs:
 - `examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015.csv`
 - `examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015.png`
 
-<p align="center"><img src="examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015.png" alt="SEOBNRv5EHM and NRHybSur3dq8_CCE memory-mode comparison" width="85%"></p>
+<p align="center"><img src="examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015.png?v=d200c1e26515" alt="SEOBNRv5EHM and NRHybSur3dq8_CCE memory-mode comparison" width="85%"></p>
 
 ## FastEMRIWaveforms Examples
 
