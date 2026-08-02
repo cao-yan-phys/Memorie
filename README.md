@@ -54,12 +54,7 @@ The example uses `SEOBNRv5EHM` to generate the oscillatory modes of a nonprecess
 
 The default initial PN parameter is $x_0=0.015$, implemented as `omega_start = 0.015**1.5`. $h_{2,0}$ and $h_{3,0}$ panels show the real/imaginary component of $h_{l,m}(t)-h_{l,m}(t_0)$, while CM-memory panels show $|h_{l,m}(t)-h_{l,m}(t_0)|$.
 
-For CM-memory modes the example prints both:
-
-- the full Nichols leading-PN value; and
-- the leading-PN value truncated to the modes actually returned by `pyseobnr`.
-
-This matters because `SEOBNRv5EHM` does not provide every leading PN radiative mode, e.g. it does not provide the $(3,1)$ mode.
+Warning: `SEOBNRv5EHM` does not provide every mode entering the leading-PN CM-memory formulas, including the $(3,1)$ and $(4,0)$ modes; this example supplements both with their 0PN expressions. The truncated curve retains only the modes entering those formulas.
 
 Example outputs:
 

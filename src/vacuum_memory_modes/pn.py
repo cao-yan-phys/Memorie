@@ -6,6 +6,8 @@ from math import pi, sqrt
 
 import numpy as np
 
+from .core import gamma_cm
+
 Mode = tuple[int, int]
 
 
@@ -34,6 +36,19 @@ def h20_lo(q: float, x: float) -> float:
     """Leading 0PN displacement-memory ``h_20`` mode."""
 
     return k20_lo(q) * float(x)
+
+
+def k40_lo(q: float) -> float:
+    """Leading 0PN coefficient for the displacement-memory ``h_40`` mode."""
+
+    nu = symmetric_mass_ratio(q)
+    return nu * sqrt(pi / 10.0) / 63.0
+
+
+def h40_lo(q: float, x: float) -> float:
+    """Leading 0PN displacement-memory ``h_40`` mode."""
+
+    return k40_lo(q) * float(x)
 
 
 def infer_x_eff_from_dh20(dh20_dt: complex, q: float) -> float:
@@ -93,21 +108,19 @@ def _lo_pn_moments(
         (2, 0): (4.0 / 7.0) * np.sqrt(5.0 * np.pi / 3.0) * nu * x,
         (3, 1): -(2j / 3.0) * np.sqrt(np.pi / 35.0) * dm * nu * x**1.5 * np.exp(-1j * phase),
         (3, 3): 6j * np.sqrt(3.0 * np.pi / 7.0) * dm * nu * x**1.5 * np.exp(-3j * phase),
+        (4, 0): np.sqrt(np.pi / 5.0) * nu * x / 63.0,
     }
     Udot = {
         (2, 2): 16j * np.sqrt(2.0 * np.pi / 5.0) * nu * x**2.5 * np.exp(-2j * phase),
         (2, 0): 0.0j,
         (3, 1): -(2.0 / 3.0) * np.sqrt(np.pi / 35.0) * dm * nu * x**3 * np.exp(-1j * phase),
         (3, 3): 18.0 * np.sqrt(3.0 * np.pi / 7.0) * dm * nu * x**3 * np.exp(-3j * phase),
+        (4, 0): 0.0j,
     }
     return (
         _filter_modes(_with_negative_m(U), available_modes),
         _filter_modes(_with_negative_m(Udot), available_modes),
     )
-
-
-def _get(modes: dict[Mode, complex], mode: Mode) -> complex:
-    return complex(modes.get(mode, 0.0j))
 
 
 def cm_strain_lo_modes(
@@ -116,48 +129,28 @@ def cm_strain_lo_modes(
     phase: float,
     available_modes: set[Mode] | None = None,
 ) -> dict[Mode, complex]:
-    """Nichols leading nonlinear-null CM strain modes.
+    """Corrected leading nonlinear-null CM strain modes.
 
     If ``available_modes`` is supplied, unavailable PN radiative moments are
     set to zero.  The returned values are strain modes ``h_lm=U_lm/sqrt(2)``.
+
+    The leading displacement-memory ``U_40`` contribution omitted in Nichols
+    (2018) is included, producing the additional ``(7,1)`` and ``(7,3)`` modes.
     """
 
     U, dU = _lo_pn_moments(q, x, phase, available_modes=available_modes)
-    U22 = _get(U, (2, 2))
-    U2m2 = _get(U, (2, -2))
-    U20 = _get(U, (2, 0))
-    U31 = _get(U, (3, 1))
-    U3m1 = _get(U, (3, -1))
-    U33 = _get(U, (3, 3))
-    dU22 = _get(dU, (2, 2))
-    dU2m2 = _get(dU, (2, -2))
-    dU31 = _get(dU, (3, 1))
-    dU3m1 = _get(dU, (3, -1))
-    dU33 = _get(dU, (3, 3))
-
-    u_cm = {
-        (3, 1): (
-            2.0 * np.sqrt(5.0) * (U33 * dU2m2 - dU33 * U2m2)
-            + 4.0 * np.sqrt(3.0) * (U3m1 * dU22 - dU3m1 * U22)
-            + 3.0 * np.sqrt(2.0) * U20 * dU31
+    h = {mode: value / np.sqrt(2.0) for mode, value in U.items()}
+    hdot = {mode: value / np.sqrt(2.0) for mode, value in dU.items()}
+    targets = ((3, 1), (3, 3), (5, 1), (5, 3), (5, 5), (7, 1), (7, 3))
+    return {
+        (L, M): sum(
+            gamma_cm(L, M, l1, m1, l2, m2)
+            * (
+                h1 * np.conjugate(hdot[(l2, m2)])
+                - hdot[(l1, m1)] * np.conjugate(h2)
+            )
+            for (l1, m1), h1 in h.items()
+            for (l2, m2), h2 in h.items()
         )
-        / (96.0 * np.sqrt(30.0 * np.pi)),
-        (3, 3): (
-            2.0 * np.sqrt(5.0) * (U31 * dU22 - dU31 * U22)
-            - 5.0 * np.sqrt(2.0) * U20 * dU33
-        )
-        / (96.0 * np.sqrt(30.0 * np.pi)),
-        (5, 1): (
-            (U33 * dU2m2 - dU33 * U2m2)
-            + np.sqrt(15.0) * (U3m1 * dU22 - dU3m1 * U22)
-            - 3.0 * np.sqrt(10.0) * U20 * dU31
-        )
-        / (1680.0 * np.sqrt(165.0 * np.pi)),
-        (5, 3): (
-            np.sqrt(10.0) * (U31 * dU22 - dU31 * U22)
-            - 2.0 * U20 * dU33
-        )
-        / (240.0 * np.sqrt(1155.0 * np.pi)),
-        (5, 5): (U33 * dU22 - dU33 * U22) / (120.0 * np.sqrt(154.0 * np.pi)),
+        for L, M in targets
     }
-    return {mode: value / np.sqrt(2.0) for mode, value in u_cm.items()}
