@@ -25,8 +25,6 @@ from vacuum_memory_modes import (  # noqa: E402
     cumulative_integral,
     delta_mass_fraction,
     differentiate_modes,
-    h20_lo,
-    h40_lo,
     h30_spin_lo,
     infer_x_eff_from_dh20,
     k20_lo,
@@ -161,20 +159,19 @@ def main() -> int:
     oscillatory_hdot = differentiate_modes(t, oscillatory_modes)
 
     cm_targets = [(3, 1), (3, 3), (5, 1), (5, 3), (5, 5), (7, 1), (7, 3)]
-    targets = [(2, 0), (3, 0), *cm_targets]
+    targets = [(2, 0), (3, 0), (4, 0), *cm_targets]
     primary = compute_memory_modes(t, oscillatory_modes, targets, lmax=args.lmax, hdot=oscillatory_hdot)
 
     h20 = primary[(2, 0)]["h_displacement"]
     dh20_dt = primary[(2, 0)]["dh_displacement_dt"]
     x_eff = infer_x_eff_from_dh20(dh20_dt[0], args.q)
-    h20_offset = h20_lo(args.q, x_eff)
-    h20_absolute = h20 - h20[0] + h20_offset
+    h40 = primary[(4, 0)]["h_displacement"]
+    dh40_dt = primary[(4, 0)]["dh_displacement_dt"]
 
     modes_with_h20 = dict(oscillatory_modes)
-    modes_with_h20[(2, 0)] = h20_absolute
+    modes_with_h20[(2, 0)] = h20
     hdot_with_h20 = dict(oscillatory_hdot)
     hdot_with_h20[(2, 0)] = dh20_dt
-    h40_ratio = h40_lo(args.q, 1.0) / h20_lo(args.q, 1.0)
     h31_0pn, dh31_0pn_dt = _h31_0pn_from_h22(
         t,
         oscillatory_modes[(2, 2)],
@@ -183,11 +180,11 @@ def main() -> int:
     supplemented_modes = dict(modes_with_h20)
     supplemented_modes[(3, 1)] = h31_0pn
     supplemented_modes[(3, -1)] = -np.conjugate(h31_0pn)
-    supplemented_modes[(4, 0)] = h40_ratio * h20_absolute
+    supplemented_modes[(4, 0)] = h40
     supplemented_hdot = dict(hdot_with_h20)
     supplemented_hdot[(3, 1)] = dh31_0pn_dt
     supplemented_hdot[(3, -1)] = -np.conjugate(dh31_0pn_dt)
-    supplemented_hdot[(4, 0)] = h40_ratio * dh20_dt
+    supplemented_hdot[(4, 0)] = dh40_dt
     with_supplemented_modes = compute_memory_modes(
         t,
         supplemented_modes,
@@ -234,8 +231,8 @@ def main() -> int:
     print("Effective 0PN initial x from dot h20")
     print(f"Re(dot h20)_0 = {np.real(dh20_dt[0]):.12e}")
     print(f"x_eff = {x_eff:.12e}")
-    print(f"h20_LO(x_eff) = {h20_offset:.12e}")
-    print(f"h20_abs_numeric(t0) = {h20_absolute[0].real:.12e}")
+    print(f"h20_numeric(t0) = {h20[0].real:.12e}")
+    print(f"h40_numeric(t0) = {h40[0].real:.12e}")
     print()
     print("Initial spin-memory h30")
     print("mode        numeric                 LO PN                 rel.err")
@@ -245,7 +242,7 @@ def main() -> int:
     )
     print()
     print("Initial CM strain modes")
-    print("mode        full + 0PN (3,1),(4,0)  truncated + 0PN         corrected LO PN")
+    print("mode        full + 0PN (3,1)        truncated + 0PN         corrected LO PN")
     rows = []
     for target in cm_targets:
         supplemented = with_supplemented_modes[target]["h_cm_mode"][0]
@@ -339,14 +336,14 @@ def main() -> int:
 
         plot_specs = [
             (
-                r"Re $\Delta h_{20}/(\nu M/R)$",
+                r"Re $\Delta h_{2,0}/(\nu M/R)$",
                 t_plot,
-                np.real(h20_absolute[indices] - h20_absolute[0]) / nu,
+                np.real(h20[indices] - h20[0]) / nu,
                 t_plot,
                 np.real(h20_0pn - h20_0pn[0]) / nu,
             ),
             (
-                r"Im $\Delta h_{30}/(\nu M/R)$",
+                r"Im $\Delta h_{3,0}/(\nu M/R)$",
                 t_plot,
                 np.imag(primary[(3, 0)]["h_spin_mode"][indices] - primary[(3, 0)]["h_spin_mode"][0]) / nu,
                 t_plot,
@@ -411,7 +408,7 @@ def main() -> int:
                 numeric,
                 color="black",
                 linewidth=1.4,
-                label="SEOBNRv5EHM + 0PN (3,1), (4,0)",
+                label="SEOBNRv5EHM + 0PN (3,1)",
             )
             if supplemented is not None:
                 ax.plot(
@@ -420,7 +417,7 @@ def main() -> int:
                     color="tab:blue",
                     linestyle="-.",
                     linewidth=1.3,
-                    label="SEOBNRv5EHM (truncated) + 0PN (3,1), (4,0)",
+                    label="SEOBNRv5EHM (truncated) + 0PN (3,1)",
                 )
             ax.plot(
                 effective_t,
