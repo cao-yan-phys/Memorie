@@ -1,4 +1,4 @@
-"""Compute h20, h30, and CM memory from a circular nonprecessing SEOBNRv5EHM event."""
+"""Compute h20, h30, h40, and CM memory from a circular nonprecessing SEOBNRv5EHM event."""
 
 from __future__ import annotations
 
@@ -26,6 +26,7 @@ from vacuum_memory_modes import (  # noqa: E402
     delta_mass_fraction,
     differentiate_modes,
     h30_spin_lo,
+    h40_lo,
     infer_x_eff_from_dh20,
     k20_lo,
     phase_from_h22_lo,
@@ -320,6 +321,7 @@ def main() -> int:
 
         h20_0pn = k20_lo(args.q) * x_plot
         h30_0pn = np.array([h30_spin_lo(args.q, x_value) for x_value in x_plot])
+        h40_0pn = np.array([h40_lo(args.q, x_value) for x_value in x_plot])
         cm_0pn_coefficients = cm_strain_lo_modes(args.q, 1.0, 0.0)
         cm_0pn = {
             target: (
@@ -348,6 +350,13 @@ def main() -> int:
                 np.imag(primary[(3, 0)]["h_spin_mode"][indices] - primary[(3, 0)]["h_spin_mode"][0]) / nu,
                 t_plot,
                 np.imag(h30_0pn - h30_0pn[0]) / nu,
+            ),
+            (
+                r"Re $\Delta h_{4,0}/(\nu M/R)$",
+                t_plot,
+                np.real(h40[indices] - h40[0]) / nu,
+                t_plot,
+                np.real(h40_0pn - h40_0pn[0]) / nu,
             ),
         ]
         for target in cm_targets:
@@ -435,7 +444,7 @@ def main() -> int:
             if ax.get_visible():
                 ax.set_xlabel(r"$t-t_0$ [$M$]")
         flat_axes[0].legend(loc="best", frameon=False)
-        flat_axes[2].legend(loc="best", frameon=False)
+        flat_axes[3].legend(loc="best", frameon=False)
         fig.suptitle(f"SEOBNRv5EHM memory-mode waveform check, q={args.q:g}")
         png_path = output_dir / f"seobnrv5ehm_circular_memory_q{args.q:g}_omega{args.omega_start:g}.png"
         fig.savefig(png_path, dpi=180)
