@@ -1,6 +1,6 @@
-# Vacuum Null Memory Calculator
+# Memorie
 
-Perturbative calculators for vacuum nonlinear-null gravitational-wave memory modes.
+Memorie is a perturbative calculator for vacuum nonlinear-null gravitational-wave memory modes.
 
 Includes:
 
@@ -8,7 +8,7 @@ Includes:
 - leading-order PN helpers for nonprecessing quasicircular compact binaries;
 - a bundled `lmax=10` angular-coupling table for memory-mode calculations.
 
-The bundled angular-coupling table lives at `src/vacuum_memory_modes/data/gamma_coeffs_lmax10.npz`. It stores the angular coupling coefficients used to build memory modes from products of oscillatory waveform modes. The examples load this table automatically, so they do not regenerate the Wigner-3j coefficients at runtime. If a calculation asks for a mode or `lmax` not covered by the bundled table, the code generates the needed coefficients on the fly.
+The bundled angular-coupling table lives at `src/memorie/data/gamma_coeffs_lmax10.npz`. It stores the angular coupling coefficients used to build memory modes from products of oscillatory waveform modes. The examples load this table automatically, so they do not regenerate the Wigner-3j coefficients at runtime. If a calculation asks for a mode or `lmax` not covered by the bundled table, the code generates the needed coefficients on the fly.
 
 ## Install
 
@@ -29,7 +29,7 @@ The waveform models used by the examples are:
 `compute_memory_modes` computes memory from a complete dictionary of the available oscillatory modes:
 
 ```python
-from vacuum_memory_modes import compute_memory_modes
+from memorie import compute_memory_modes
 
 memory = compute_memory_modes(
     t,
@@ -50,9 +50,9 @@ If a waveform model returns only positive-$m$ modes and the source is known to b
 python examples/seobnrv5ehm_circular_memory_demo.py
 ```
 
-The example uses `SEOBNRv5EHM` to generate the oscillatory modes of a nonprecessing, quasicircular compact binary. It then computes $h_{2,0}$, $h_{3,0}$, and the leading CM-memory modes, infers an effective 0PN $x$ parameter from the initial $\dot h_{2,0}$, and compares the initial numerical memory modes with the corresponding leading PN formulas.
+The example uses `SEOBNRv5EHM` to generate the oscillatory modes of a nonprecessing, quasicircular compact binary. It then computes $h_{2,0}$, $h_{3,0}$, $h_{4,0}$, and the leading CM-memory modes, infers an effective 0PN $x$ parameter from the initial $\dot h_{2,0}$, and compares the initial numerical memory modes with the corresponding leading PN formulas.
 
-The default initial PN parameter is $x_0=0.015$, implemented as `omega_start = 0.015**1.5`. $h_{2,0}$ and $h_{3,0}$ panels show the real/imaginary component of $h_{l,m}(t)-h_{l,m}(t_0)$, while CM-memory panels show $|h_{l,m}(t)-h_{l,m}(t_0)|$.
+The default initial PN parameter is $x_0=0.015$, implemented as `omega_start = 0.015**1.5`. The $h_{2,0}$ and $h_{4,0}$ panels show the real part of $h_{l,m}(t)-h_{l,m}(t_0)$, the $h_{3,0}$ panel shows the imaginary part, and the CM-memory panels show $|h_{l,m}(t)-h_{l,m}(t_0)|$.
 
 Warning: `SEOBNRv5EHM` does not provide the leading-PN $(3,1)$ radiative mode, so this example supplements it with its 0PN expression. The truncated curve retains only the modes entering the leading-PN CM-memory formulas.
 

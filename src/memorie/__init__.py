@@ -1,4 +1,4 @@
-"""Minimal vacuum nonlinear-null gravitational-wave memory calculator."""
+"""Memorie: perturbative vacuum nonlinear-null gravitational-wave memory calculators."""
 
 from .core import (
     B_coefficient,

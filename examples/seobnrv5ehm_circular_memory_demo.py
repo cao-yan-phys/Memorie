@@ -18,7 +18,7 @@ MTSUN_SI = 4.925490947641266978197229498498379006e-6
 DEFAULT_X_START = 0.015
 DEFAULT_OMEGA_START = DEFAULT_X_START**1.5
 
-from vacuum_memory_modes import (  # noqa: E402
+from memorie import (  # noqa: E402
     cm_strain_lo_modes,
     complete_nonprecessing_modes,
     compute_memory_modes,

@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "vacuum-memory-modes"
+name = "memorie"
 version = "0.1.0"
 description = "Perturbative calculators for vacuum nonlinear-null gravitational-wave memory modes"
 readme = "README.md"
@@ -23,4 +23,4 @@ fastemriwaveforms = ["fastemriwaveforms", "matplotlib"]
 where = ["src"]
 
 [tool.setuptools.package-data]
-vacuum_memory_modes = ["data/*.npz"]
+memorie = ["data/*.npz"]

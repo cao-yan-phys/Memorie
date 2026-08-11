@@ -18,7 +18,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from vacuum_memory_modes import (  # noqa: E402
+from memorie import (  # noqa: E402
     FewEmriConfig,
     compute_few_emri_memory_modes,
     h20_lo,
