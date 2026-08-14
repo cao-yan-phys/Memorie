@@ -106,7 +106,7 @@ The additional `fastemriwaveforms_arxiv_2407_19017_h20_comparison.py` example co
 python examples/superrad_vector_cloud_h20_h30_demo.py
 ```
 
-This example evaluates the full `SuperRad` evolution of a relativistic vector $\lvert1011\rangle$ cloud and computes the displacement $h_{2,0}$ and spin $h_{3,0}$ memory modes. The red dashed curves are endpoint-matched quadrupolar references. For $t\geq t_{\rm sat}$, they follow $1-\tau_{\rm gw}/(t-t_{\rm sat}+\tau_{\rm gw})$ for $h_{2,0}$ and $1-\left[1+(t-t_{\rm sat})/\tau_{\rm gw}\right]^{-2}$ for $h_{3,0}$.
+This example evaluates the full `SuperRad` evolution of a relativistic vector $\lvert1011\rangle$ cloud and computes the displacement $h_{2,0}$ and spin $h_{3,0}$ memory modes. The calculation retains only the nonoscillatory (“DC”) component of the memory waveform. The red dashed curves are endpoint-matched quadrupolar references. For $t\geq t_{\rm sat}$, they follow $1-\tau_{\rm gw}/(t-t_{\rm sat}+\tau_{\rm gw})$ for $h_{2,0}$ and $1-\left[1+(t-t_{\rm sat})/\tau_{\rm gw}\right]^{-2}$ for $h_{3,0}$.
 
 Example outputs:
 
