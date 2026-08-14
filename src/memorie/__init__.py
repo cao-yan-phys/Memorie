@@ -17,6 +17,7 @@ from .core import (
     precompute_memory_coeffs,
 )
 from .few_emri import FewEmriConfig, compute_few_emri_memory_modes
+from .superrad import SuperRadConfig, compute_superrad_memory_modes
 from .pn import (
     cm_strain_lo_modes,
     delta_mass_fraction,
@@ -34,11 +35,13 @@ __all__ = [
     "B_coefficient",
     "C_coefficient",
     "FewEmriConfig",
+    "SuperRadConfig",
     "cm_strain_lo_modes",
     "complete_nonprecessing_modes",
     "compute_memory_modes",
     "compute_vacuum_null_memory_mode",
     "compute_few_emri_memory_modes",
+    "compute_superrad_memory_modes",
     "cumulative_integral",
     "delta_mass_fraction",
     "differentiate_modes",

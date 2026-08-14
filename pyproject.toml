@@ -18,6 +18,7 @@ dependencies = [
 pyseobnr = ["pyseobnr", "matplotlib"]
 nrhybsur3dq8-cce = ["pyseobnr", "gwsurrogate", "matplotlib"]
 fastemriwaveforms = ["fastemriwaveforms", "matplotlib"]
+superrad = ["superrad", "matplotlib"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

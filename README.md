@@ -16,13 +16,14 @@ The bundled angular-coupling table lives at `src/memorie/data/gamma_coeffs_lmax1
 pip install -e .
 ```
 
-For the `SEOBNRv5EHM` example, install `pyseobnr` in the same environment. For the `SEOBNRv5EHM`-vs-`NRHybSur3dq8_CCE` example, install both `pyseobnr` and `gwsurrogate`. For the `FastEMRIWaveforms` example, install `fastemriwaveforms`.
+For the `SEOBNRv5EHM` example, install `pyseobnr` in the same environment. For the `SEOBNRv5EHM`-vs-`NRHybSur3dq8_CCE` example, install both `pyseobnr` and `gwsurrogate`. For the `FastEMRIWaveforms` example, install `fastemriwaveforms`. For the `SuperRad` example, install `superrad`.
 
 The waveform models used by the examples are:
 
 - [`SEOBNRv5EHM` through `pyseobnr`](https://github.com/AEI-ACR/pyseobnr)
 - [`NRHybSur3dq8_CCE` through `gwsurrogate`](https://github.com/sxs-collaboration/gwsurrogate)
 - [`FastEMRIWaveforms`](https://github.com/BlackHolePerturbationToolkit/FastEMRIWaveforms)
+- [`SuperRad`](https://www.bitbucket.org/weast/superrad)
 
 ## Public Interface
 
@@ -84,7 +85,7 @@ Example outputs:
 python examples/fastemriwaveforms_emri_h20_h30_demo.py
 ```
 
-This example uses `FastEMRIWaveforms` to generate equatorial Kerr trajectories with initial eccentricities $e_0=0$ and $e_0=0.8$, mass ratio $q=10^5$, and spin $\chi=0.8$. It computes $h_{2,0}$ and $h_{3,0}$ from the oscillatory modes, and compares the $e_0=0$ result with the effective-0PN construction.
+This example uses `FastEMRIWaveforms` to generate equatorial Kerr trajectories with initial eccentricities $e_0=0$ and $e_0=0.8$, mass ratio $q=10^5$, and spin $\chi=0.8$. It computes $h_{2,0}$ and $h_{3,0}$ from the oscillatory modes, and compares the $e_0=0$ result with the effective-0PN construction. The calculation retains only the nonoscillatory (“DC”) component of the memory waveform.
 
 With the default `frequency_source = "geodesic"`, the initial frequency parameter for either trajectory is defined by the azimuthal geodesic fundamental frequency: $x_0=\left[M\Omega_\phi(t_0)\right]^{2/3}$.
 
@@ -98,6 +99,21 @@ Example outputs:
 The additional `fastemriwaveforms_arxiv_2407_19017_h20_comparison.py` example compares the $h_{2,0}$ memory mode calculated from `FastEMRIWaveforms` oscillatory modes with the result reported in [arXiv:2407.19017](https://arxiv.org/abs/2407.19017).
 
 <p align="center"><img src="examples/output/fastemriwaveforms_arxiv_2407_19017_h20_comparison_q100000_chi0.png" alt="FastEMRIWaveforms and arXiv:2407.19017 memory-mode comparison" width="85%"></p>
+
+## SuperRad Example
+
+```bash
+python examples/superrad_vector_cloud_h20_h30_demo.py
+```
+
+This example evaluates the full `SuperRad` evolution of a relativistic vector $\lvert1011\rangle$ cloud and computes the displacement $h_{2,0}$ and spin $h_{3,0}$ memory modes. The red dashed curves are endpoint-matched quadrupolar references. For $t\geq t_{\rm sat}$, they follow $1-\tau_{\rm gw}/(t-t_{\rm sat}+\tau_{\rm gw})$ for $h_{2,0}$ and $1-\left[1+(t-t_{\rm sat})/\tau_{\rm gw}\right]^{-2}$ for $h_{3,0}$.
+
+Example outputs:
+
+- `examples/output/superrad_vector_1011_h20_h30_alpha0p2_chi0p7.csv`
+- `examples/output/superrad_vector_1011_h20_h30_alpha0p2_chi0p7.png`
+
+<p align="center"><img src="examples/output/superrad_vector_1011_h20_h30_alpha0p2_chi0p7.png" alt="SuperRad vector 1011 memory modes" width="85%"></p>
 
 ## The Rise and Fall of Displacement Memory at Finite Radius
 

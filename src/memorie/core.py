@@ -305,8 +305,9 @@ def compute_vacuum_null_memory_mode(
     coeffs: Iterable[tuple],
     hdot: Mapping[Any, Any] | None = None,
     edge_order: int = 2,
+    include_cm: bool = True,
 ) -> dict[str, Any]:
-    """Compute displacement, spin, and CM observables for one target mode."""
+    """Compute displacement and spin observables, optionally including CM memory."""
 
     coeff_list = list(coeffs)
     if not coeff_list:
@@ -320,7 +321,7 @@ def compute_vacuum_null_memory_mode(
     L, M = int(coeff_list[0][0]), int(coeff_list[0][1])
     displacement_source = np.zeros_like(t_arr, dtype=complex)
     h_spin_mode = np.zeros_like(t_arr, dtype=complex)
-    h_cm_mode = np.zeros_like(t_arr, dtype=complex)
+    h_cm_mode = np.zeros_like(t_arr, dtype=complex) if include_cm else None
     used_terms = 0
     skipped_terms = 0
 
@@ -345,20 +346,23 @@ def compute_vacuum_null_memory_mode(
         dh2 = hdot_norm[mode2]
         displacement_source += float(gD) * dh1 * np.conjugate(dh2)
         h_spin_mode += float(gS) * (h1 * np.conjugate(dh2) - dh1 * np.conjugate(h2))
-        h_cm_mode += float(gCM) * (h1 * np.conjugate(dh2) - dh1 * np.conjugate(h2))
+        if include_cm:
+            h_cm_mode += float(gCM) * (h1 * np.conjugate(dh2) - dh1 * np.conjugate(h2))
         used_terms += 1
 
-    return {
+    result = {
         "target_mode": (L, M),
         "dh_displacement_dt": displacement_source,
         "h_displacement": cumulative_integral(t_arr, displacement_source),
         "h_spin_mode": h_spin_mode,
         "spin_memory_integral": cumulative_integral(t_arr, h_spin_mode),
-        "h_cm_mode": h_cm_mode,
-        "cm_memory_integral": cumulative_integral(t_arr, h_cm_mode),
         "used_terms": used_terms,
         "skipped_terms": skipped_terms,
     }
+    if include_cm:
+        result["h_cm_mode"] = h_cm_mode
+        result["cm_memory_integral"] = cumulative_integral(t_arr, h_cm_mode)
+    return result
 
 
 def compute_memory_modes(
@@ -367,6 +371,7 @@ def compute_memory_modes(
     targets: Iterable[tuple[int, int]],
     lmax: int = _DEFAULT_CACHE_LMAX,
     hdot: Mapping[Any, Any] | None = None,
+    include_cm: bool = True,
 ) -> dict[tuple[int, int], dict[str, Any]]:
     """Compute several target modes using one differentiated mode dictionary."""
 
@@ -379,6 +384,7 @@ def compute_memory_modes(
             h_norm,
             precompute_memory_coeffs(*target, l1_max=lmax, l2_max=lmax),
             hdot=hdot_norm,
+            include_cm=include_cm,
         )
         for target in targets
     }
