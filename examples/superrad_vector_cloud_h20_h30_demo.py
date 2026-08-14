@@ -24,6 +24,16 @@ def _token(value: float) -> str:
     return f"{value:g}".replace("-", "m").replace(".", "p")
 
 
+def _latex_number(value: float) -> str:
+    if value == 0.0:
+        return "0"
+    exponent = int(np.floor(np.log10(abs(value))))
+    coefficient = value / 10.0**exponent
+    if np.isclose(coefficient, 1.0):
+        return rf"10^{{{exponent}}}"
+    return rf"{coefficient:.3g}\times10^{{{exponent}}}"
+
+
 def _endpoint_matched_quadrupolar_model(
     result: dict[str, object],
     h20: np.ndarray,
@@ -114,6 +124,7 @@ def main() -> int:
     delta_h30 = h30 - h30[0]
     h20_reference = _endpoint_matched_quadrupolar_model(result, h20)
     h30_reference = _endpoint_matched_quadrupolar_h30_model(result, h30)
+    beta0 = float(result["cloud_mass_msun"][0]) / float(args.black_hole_mass_msun)
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     stem = (
@@ -266,7 +277,9 @@ def main() -> int:
             zero_floor=True,
         )
         fig.suptitle(
-            rf"Vector $|1011\rangle$, $\alpha={args.alpha:g}$, $\chi={args.black_hole_spin:g}$"
+            rf"Vector $|1011\rangle$, $\alpha={args.alpha:g}$, "
+            rf"$\chi_{{\rm BH}}(t_0)={args.black_hole_spin:g}$, "
+            rf"$\beta(t_0)=M_{{\rm c}}(t_0)/M={_latex_number(beta0)}$"
         )
         fig.savefig(png_path, dpi=220)
         plt.close(fig)
