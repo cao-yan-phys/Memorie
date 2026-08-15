@@ -122,7 +122,7 @@ Example outputs:
 python examples/kerr_axial_plunge_e1p01_h20_h30_demo.py
 ```
 
-This example computes $h_{2,0}$ and $h_{3,0}$ memory modes from the $(2\le l\le 7,m=0)$ linear Teukolsky modes of a test body on an $E=1.01$ north-axis plunge into a Kerr black hole with $\chi=0.999$; the symmetric mass ratio is $\nu=10^{-4}$. The figure compares $\Delta h_{2,0}$ and $\Delta h_{3,0}$ with their memory contributions scaled by $10^5$.
+This example computes $h_{2,0}$ and $h_{3,0}$ memory modes from the $(2\le l\le 7,m=0)$ linear Teukolsky modes of a test body on an $E=1.01$ north-axis plunge into a Kerr black hole with $\chi=0.999$; the symmetric mass ratio is $\nu=10^{-4}$. The figure shows the real and imaginary parts of the linear $\Delta h_{2,0}$ and $\Delta h_{3,0}$ modes (blue), together with the corresponding nonlinear-null memory contributions (black), scaled by $10^5$.
 
 Example outputs:
 
