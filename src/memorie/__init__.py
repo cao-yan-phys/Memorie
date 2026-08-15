@@ -17,6 +17,13 @@ from .core import (
     precompute_memory_coeffs,
 )
 from .few_emri import FewEmriConfig, compute_few_emri_memory_modes
+from .qnm_ringdown import (
+    KerrQNMExcitation,
+    KerrRingdownConfig,
+    analytic_single_exponential_memory_modes,
+    compute_kerr_ringdown_memory_modes,
+    generate_kerr_ringdown_modes,
+)
 from .superrad import SuperRadConfig, compute_superrad_memory_modes
 from .pn import (
     cm_strain_lo_modes,
@@ -35,12 +42,16 @@ __all__ = [
     "B_coefficient",
     "C_coefficient",
     "FewEmriConfig",
+    "KerrQNMExcitation",
+    "KerrRingdownConfig",
     "SuperRadConfig",
+    "analytic_single_exponential_memory_modes",
     "cm_strain_lo_modes",
     "complete_nonprecessing_modes",
     "compute_memory_modes",
     "compute_vacuum_null_memory_mode",
     "compute_few_emri_memory_modes",
+    "compute_kerr_ringdown_memory_modes",
     "compute_superrad_memory_modes",
     "cumulative_integral",
     "delta_mass_fraction",
@@ -48,6 +59,7 @@ __all__ = [
     "gamma_cm",
     "gamma_displacement",
     "gamma_spin",
+    "generate_kerr_ringdown_modes",
     "h20_lo",
     "h40_lo",
     "h30_spin_lo",
