@@ -107,7 +107,7 @@ The additional `fastemriwaveforms_arxiv_2407_19017_h20_comparison.py` example co
 python examples/superrad_vector_cloud_h20_h30_demo.py
 ```
 
-This example evaluates the full `SuperRad` evolution of a relativistic vector $\lvert1011\rangle$ cloud and computes the displacement $h_{2,0}$ and spin $h_{3,0}$ memory modes. The calculation retains only the nonoscillatory (“DC”) component of the memory waveform. The red dashed curves are endpoint-matched quadrupolar models; for $t\geq t_{\rm sat}$, they follow $1-\tau_{\rm gw}/(t-t_{\rm sat}+\tau_{\rm gw})$ for $\Delta h_{2,0}$ and $1-\left[1+(t-t_{\rm sat})/\tau_{\rm gw}\right]^{-2}$ for $\Delta h_{3,0}$.
+This example evaluates the full `SuperRad` evolution of a relativistic vector $\lvert1011\rangle$ cloud and computes the displacement $h_{2,0}$ and spin $h_{3,0}$ memory modes. The calculation retains only the nonoscillatory (“DC”) component of the memory waveform. The red dashed curves are endpoint-matched quadrupolar models; for $t\geq t_{\rm sat}$, they follow $1-[1+(t-t_{\rm sat})/\tau_{\rm gw}]^{-1}$ for $\Delta h_{2,0}$ and $1-\left[1+(t-t_{\rm sat})/\tau_{\rm gw}\right]^{-2}$ for $\Delta h_{3,0}$.
 
 Example outputs:
 
@@ -122,7 +122,7 @@ Example outputs:
 python examples/kerr_axial_plunge_e1p01_h20_h30_demo.py
 ```
 
-This example computes $h_{2,0}$ and $h_{3,0}$ memory modes from the $(2\le l\le 7,m=0)$ linear Teukolsky modes of a test body on an $E=1.01$ north-axis plunge into a Kerr black hole with $\chi=0.999$; the symmetric mass ratio is $\nu=10^{-4}$. The figure shows the real and imaginary parts of the linear $\Delta h_{2,0}$ and $\Delta h_{3,0}$ modes (blue), together with the corresponding nonlinear-null memory contributions (black), scaled by $10^5$.
+This example computes $h_{2,0}$ and $h_{3,0}$ memory modes from the $(2\le l\le 7,m=0)$ linear Teukolsky modes of a test body on an $E=1.01$ north-axis plunge into a Kerr black hole with $\chi=0.999$; the symmetric mass ratio is $\nu=10^{-4}$. The figure shows the linear $\Delta h_{2,0}$ and $\Delta h_{3,0}$ modes (blue), together with the corresponding nonlinear memory contributions (black), scaled by $10^5$.
 
 Example outputs:
 
@@ -137,7 +137,7 @@ Example outputs:
 python examples/qnm_kerr_ringdown_220_h20_h30_demo.py
 ```
 
-This example evaluates the fundamental $(\ell_{\rm s},m,n)=(2,2,0)$ QNM of a Kerr black hole with final spin $\chi_f=0.7$, projects it onto spherical modes through $l_{\max}=10$, and computes the displacement $h_{2,0}$ and spin-memory $h_{3,0}$ modes.  The input $A_{220}=0.1$ is the amplitude of the excited spin-weighted spheroidal QNM at $t_0$.  The red dashed curves show the analytic results; with $u=(t-t_0)/M_f$, $\omega_{220}=\omega_R+i\omega_I$, and $\omega_I<0$, they follow $1-e^{2\omega_Iu}$ for $\Delta h_{2,0}$ and $e^{2\omega_Iu}-1$ for $\Delta h_{3,0}$.
+This example evaluates the fundamental $(\ell_{\rm s},m,n)=(2,2,0)$ QNM of a Kerr black hole with final spin $\chi_f=0.7$, projects it onto spherical modes through $l_{\max}=10$, and computes the displacement $h_{2,0}$ and spin-memory $h_{3,0}$ modes.  The input $A_{220}=0.1$ is the amplitude of the excited spin-weighted spheroidal QNM at $t_0$.  The red dashed curves show the analytic results; with $u=(t-t_0)/M_f$, $\omega_{220}=\omega_R+i\omega_I$, and $\omega_I<0$, they follow $1-e^{2\omega_Iu}$ for $\Delta h_{2,0}$ and $\Delta h_{3,0}$.
 
 Example outputs:
 
