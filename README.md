@@ -47,9 +47,7 @@ hCM20 = memory[(2, 0)]["h_cm_mode"]
 
 With the default `include_cm=True`, the result contains $`h^{\mathrm{D}}_{l,m}`$, $`h^{\mathrm{S}}_{l,m}`$, and $`h^{\mathrm{CM}}_{l,m}`$ for every requested $`(l,m)`$.
 
-The input modes are used without adjusting additive constants. A shift $`h_a\rightarrow h_a+C_a`$ leaves displacement memory unchanged, while the combination $`h_a\dot h_b^*-\dot h_a h_b^*`$ in the source integrands for spin memory and CM memory changes by $`d(C_a h_b^*-h_a C_b^*)/dt`$. Its time integral is a boundary term that vanishes if all coupled radiative modes vanish at the initial and final times.
-
-If a waveform model returns only positive-$`m`$ modes and the source is known to be nonprecessing and reflection symmetric, the missing partners may first be constructed with `complete_nonprecessing_modes`, which applies $`h_{l,-m}=(-1)^l h_{l,m}^{*}`$.
+The calculation uses the supplied strain modes in their given Bondi frame. If a waveform model returns only positive-$`m`$ modes and the source is known to be nonprecessing and reflection symmetric, the missing partners may first be constructed with `complete_nonprecessing_modes`, which applies $`h_{l,-m}=(-1)^l h_{l,m}^{*}`$.
 
 ## SEOBNRv5EHM Example
 
@@ -127,7 +125,7 @@ Example outputs:
 python examples/kerr_axial_plunge_e1p01_h20_h30_demo.py --input-csv INPUT.csv
 ```
 
-This example calculates the $`(2,0)`$ and $`(3,0)`$ memory modes from the $`(2\le l\le 7,m=0)`$ linear Teukolsky modes of a test body plunging along the north axis of a Kerr black hole. The parameters are $`E=1.01`$, $`\chi=0.999`$, and $`\nu=10^{-4}`$. The figure shows $`\Delta h^{\mathrm{linear}}_{l,0}`$ in blue, $`10^5\Delta(h^{\mathrm{D}}_{l,0}+h^{\mathrm{S}}_{l,0})`$ in black, and $`10^5\Delta h^{\mathrm{D}}_{l,0}`$ as a red dashed curve.
+This example calculates the $`(2,0)`$ and $`(3,0)`$ memory modes from the $`(2\le l\le 7,m=0)`$ linear Teukolsky modes of a test body plunging along the north axis of a Kerr black hole. The linear modes are defined by $`h_{l,m}(t=-\infty)=0`$. The parameters are $`E=1.01`$, $`\chi=0.999`$, and $`\nu=10^{-4}`$. The figure shows $`\Delta h^{\mathrm{linear}}_{l,0}`$ in blue, $`10^5\Delta(h^{\mathrm{D}}_{l,0}+h^{\mathrm{S}}_{l,0})`$ in black, and $`10^5\Delta h^{\mathrm{D}}_{l,0}`$ as a red dashed curve.
 
 Example outputs:
 
