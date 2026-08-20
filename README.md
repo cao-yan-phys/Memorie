@@ -47,7 +47,7 @@ hCM20 = memory[(2, 0)]["h_cm_mode"]
 
 With the default `include_cm=True`, the result contains $`h^{\mathrm{D}}_{l,m}`$, $`h^{\mathrm{S}}_{l,m}`$, and $`h^{\mathrm{CM}}_{l,m}`$ for every requested $`(l,m)`$.
 
-The input modes are used without adjusting additive constants. A shift $`h_a\rightarrow h_a+C_a`$ leaves displacement memory unchanged, while the combination $`h_a\dot h_b^*-\dot h_a h_b^*`$ in the source integrands for spin memory and CM memory changes by $`d(C_a h_b^*-h_a C_b^*)/dt`$. Its time integral is an endpoint term, which vanishes when all coupled radiative modes vanish at both endpoints.
+The input modes are used without adjusting additive constants. A shift $`h_a\rightarrow h_a+C_a`$ leaves displacement memory unchanged, while the combination $`h_a\dot h_b^*-\dot h_a h_b^*`$ in the source integrands for spin memory and CM memory changes by $`d(C_a h_b^*-h_a C_b^*)/dt`$. Its time integral is a boundary term that vanishes if all coupled radiative modes vanish at the initial and final times.
 
 If a waveform model returns only positive-$`m`$ modes and the source is known to be nonprecessing and reflection symmetric, the missing partners may first be constructed with `complete_nonprecessing_modes`, which applies $`h_{l,-m}=(-1)^l h_{l,m}^{*}`$.
 
