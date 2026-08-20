@@ -46,14 +46,14 @@ class KerrQNMExcitation:
 class KerrRingdownConfig:
     """Dimensionless sampling configuration for a perturbation of a Kerr hole."""
 
-    final_spin: float = 0.7
+    spin: float = 0.7
     start_time_M: float = 0.0
     end_time_M: float = 160.0
     n_samples: int = 4097
 
     def __post_init__(self) -> None:
-        if not 0.0 <= self.final_spin < 1.0:
-            raise ValueError("final_spin must satisfy 0 <= final_spin < 1")
+        if not 0.0 <= self.spin < 1.0:
+            raise ValueError("spin must satisfy 0 <= spin < 1")
         if not self.end_time_M > self.start_time_M:
             raise ValueError("end_time_M must be greater than start_time_M")
         if self.n_samples < 3:
@@ -71,7 +71,7 @@ def _qnm_module() -> Any:
 def _spherical_amplitudes(
     qnm: Any,
     excitation: KerrQNMExcitation,
-    final_spin: float,
+    spin: float,
     lmax: int,
 ) -> tuple[complex, ModeDict]:
     sequence = qnm.modes_cache(
@@ -80,7 +80,7 @@ def _spherical_amplitudes(
         m=int(excitation.m),
         n=int(excitation.overtone),
     )
-    omega, _separation_constant, mixing = sequence(a=float(final_spin))
+    omega, _separation_constant, mixing = sequence(a=float(spin))
     omega = complex(omega)
     if omega.imag >= 0.0:
         raise RuntimeError(f"qnm returned a non-decaying frequency {omega!r}")
@@ -105,8 +105,8 @@ def generate_kerr_ringdown_modes(
 ) -> dict[str, Any]:
     """Generate spherical strain modes from explicitly excited Kerr QNMs.
 
-    The returned strain modes are ``H_lm=R*h_lm/M_f`` on a time grid in
-    ``t/M_f``.  No reflection or negative-``m`` completion is applied.
+    The returned strain modes are ``H_lm=R*h_lm/M`` on a time grid in
+    ``t/M``.  No reflection or negative-``m`` completion is applied.
     """
 
     if lmax < 2:
@@ -123,7 +123,7 @@ def generate_kerr_ringdown_modes(
     components: list[dict[str, Any]] = []
 
     for excitation in excitation_list:
-        omega, amplitudes = _spherical_amplitudes(qnm, excitation, config.final_spin, lmax)
+        omega, amplitudes = _spherical_amplitudes(qnm, excitation, config.spin, lmax)
         phase = np.exp(-1j * omega * elapsed)
         component_modes = {mode: amplitude * phase for mode, amplitude in amplitudes.items()}
         component_hdot = {

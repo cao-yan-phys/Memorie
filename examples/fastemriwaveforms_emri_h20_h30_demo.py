@@ -249,7 +249,7 @@ def main() -> int:
         )
         axes[0].set_yscale("log")
         axes[0].set_ylim(*y20_lim)
-        axes[0].set_ylabel(r"$\mathrm{Re}\,\Delta h_{2,0}/(\nu M/R)$")
+        axes[0].set_ylabel(r"$\mathrm{Re}\,\Delta h^{\mathrm{D}}_{2,0}/(\nu M/R)$")
         axes[0].grid(True, which="both", alpha=0.25)
         axes[0].legend(loc="best", frameon=False)
 
@@ -271,7 +271,7 @@ def main() -> int:
         )
         axes[1].set_yscale("log")
         axes[1].set_ylim(*y30_lim)
-        axes[1].set_ylabel(r"$\mathrm{Im}\,\Delta h_{3,0}/(\nu M/R)$")
+        axes[1].set_ylabel(r"$\mathrm{Im}\,\Delta h^{\mathrm{S}}_{3,0}/(\nu M/R)$")
         axes[1].set_xlabel(r"$t-t_0$ [$M$]")
         axes[1].grid(True, which="both", alpha=0.25)
         axes[1].legend(loc="best", frameon=False)

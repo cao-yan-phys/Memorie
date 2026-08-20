@@ -200,7 +200,7 @@ def main() -> int:
         ax.set_xlim(X_MIN, X_MAX)
         ax.set_ylim(0.0, 0.11)
         ax.set_xlabel(r"$(\nu/M)t$")
-        ax.set_ylabel(r"$R h_{2,0}/(\nu M)$")
+        ax.set_ylabel(r"$R h^{\mathrm{D}}_{2,0}/(\nu M)$")
         ax.set_title(rf"$q={_latex_number(result['q'])}$, $\chi={args.spin:g}$, $e_0=0$")
         ax.ticklabel_format(axis="x", style="sci", scilimits=(6, 6), useMathText=True)
         ax.grid(alpha=0.22, linewidth=0.6)

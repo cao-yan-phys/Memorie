@@ -25,6 +25,7 @@ from memorie import (  # noqa: E402
     cumulative_integral,
     delta_mass_fraction,
     differentiate_modes,
+    h20_lo,
     h30_spin_lo,
     h40_lo,
     infer_x_eff_from_dh20,
@@ -169,8 +170,13 @@ def main() -> int:
     h40 = primary[(4, 0)]["h_displacement"]
     dh40_dt = primary[(4, 0)]["dh_displacement_dt"]
 
+    # Match the LO-PN Bondi-frame convention before these displacement-memory
+    # modes are used as inputs to the CM source.  This is specific to this
+    # circular PN comparison; the public evaluator does not infer DC baselines.
+    h20_cm_input = h20 - h20[0] + h20_lo(args.q, x_eff)
+    h40_cm_input = h40 - h40[0] + h40_lo(args.q, x_eff)
     modes_with_h20 = dict(oscillatory_modes)
-    modes_with_h20[(2, 0)] = h20
+    modes_with_h20[(2, 0)] = h20_cm_input
     hdot_with_h20 = dict(oscillatory_hdot)
     hdot_with_h20[(2, 0)] = dh20_dt
     h31_0pn, dh31_0pn_dt = _h31_0pn_from_h22(
@@ -181,7 +187,7 @@ def main() -> int:
     supplemented_modes = dict(modes_with_h20)
     supplemented_modes[(3, 1)] = h31_0pn
     supplemented_modes[(3, -1)] = -np.conjugate(h31_0pn)
-    supplemented_modes[(4, 0)] = h40
+    supplemented_modes[(4, 0)] = h40_cm_input
     supplemented_hdot = dict(hdot_with_h20)
     supplemented_hdot[(3, 1)] = dh31_0pn_dt
     supplemented_hdot[(3, -1)] = -np.conjugate(dh31_0pn_dt)
@@ -232,8 +238,8 @@ def main() -> int:
     print("Effective 0PN initial x from dot h20")
     print(f"Re(dot h20)_0 = {np.real(dh20_dt[0]):.12e}")
     print(f"x_eff = {x_eff:.12e}")
-    print(f"h20_numeric(t0) = {h20[0].real:.12e}")
-    print(f"h40_numeric(t0) = {h40[0].real:.12e}")
+    print(f"h20_CM_input(t0) = {h20_cm_input[0].real:.12e}")
+    print(f"h40_CM_input(t0) = {h40_cm_input[0].real:.12e}")
     print()
     print("Initial spin-memory h30")
     print("mode        numeric                 LO PN                 rel.err")
@@ -338,21 +344,21 @@ def main() -> int:
 
         plot_specs = [
             (
-                r"Re $\Delta h_{2,0}/(\nu M/R)$",
+                r"Re $\Delta h^{\rm D}_{2,0}/(\nu M/R)$",
                 t_plot,
                 np.real(h20[indices] - h20[0]) / nu,
                 t_plot,
                 np.real(h20_0pn - h20_0pn[0]) / nu,
             ),
             (
-                r"Im $\Delta h_{3,0}/(\nu M/R)$",
+                r"Im $\Delta h^{\rm S}_{3,0}/(\nu M/R)$",
                 t_plot,
                 np.imag(primary[(3, 0)]["h_spin_mode"][indices] - primary[(3, 0)]["h_spin_mode"][0]) / nu,
                 t_plot,
                 np.imag(h30_0pn - h30_0pn[0]) / nu,
             ),
             (
-                r"Re $\Delta h_{4,0}/(\nu M/R)$",
+                r"Re $\Delta h^{\rm D}_{4,0}/(\nu M/R)$",
                 t_plot,
                 np.real(h40[indices] - h40[0]) / nu,
                 t_plot,
@@ -389,7 +395,7 @@ def main() -> int:
             )
             plot_specs.append(
                 (
-                    rf"$|\Delta h_{{{target[0]},{target[1]}}}^{{\rm CM}}|_{{\rm envelope}}/(\nu M/R)$",
+                    rf"$|\Delta h^{{\rm CM}}_{{{target[0]},{target[1]}}}|_{{\rm envelope}}/(\nu M/R)$",
                     supplemented_t,
                     supplemented_envelope,
                     truncated_t,

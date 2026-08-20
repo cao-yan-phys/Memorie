@@ -349,8 +349,13 @@ def main() -> int:
 
     import matplotlib.pyplot as plt
 
-    cce_label = r"$\mathtt{NRHybSur3dq8\_CCE}$"
-    pyseobnr_label = rf"$\mathtt{{{args.pyseobnr_approximant}}}$ perturbative"
+    cce_label = r"$\mathtt{NRHybSur3dq8\_CCE}$ $h_{l,m}$"
+    pyseobnr_label_hD20 = (
+        rf"$\mathtt{{{args.pyseobnr_approximant}}}$ $h^{{\mathrm{{D}}}}_{{2,0}}$"
+    )
+    pyseobnr_label_hS30 = (
+        rf"$\mathtt{{{args.pyseobnr_approximant}}}$ $h^{{\mathrm{{S}}}}_{{3,0}}$"
+    )
     y20_cce = _positive_for_log(np.real(dh20_cce_norm))
     y20_pyseobnr = _positive_for_log(np.real(dh20_pyseobnr_norm))
     y30_cce = _positive_for_log(np.imag(dh30_cce_norm))
@@ -380,7 +385,7 @@ def main() -> int:
         color="red",
         linestyle="--",
         linewidth=1.3,
-        label=pyseobnr_label,
+        label=pyseobnr_label_hD20,
     )
     axes[0].set_yscale("log")
     axes[0].set_ylim(*y20_lim)
@@ -401,7 +406,7 @@ def main() -> int:
         color="red",
         linestyle="--",
         linewidth=1.3,
-        label=pyseobnr_label,
+        label=pyseobnr_label_hS30,
     )
     axes[1].set_yscale("log")
     axes[1].set_ylim(*y30_lim)
