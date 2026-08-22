@@ -140,7 +140,7 @@ Example outputs:
 python examples/qnm_kerr_ringdown_220_h20_h30_demo.py
 ```
 
-This example uses `qnm` to construct the fundamental spin-weighted spheroidal QNM $`(l_{\mathrm{s}},m,n)=(2,2,0)`$ (including the $`m=-2`$ partner) of a Kerr BH with spin $`\chi=0.7`$. Spheroidal-to-spherical mixing preserves $`m`$, so the input waveform has vanishing $`(2,0)`$ and $`(3,0)`$ modes. For $`u=(t-t_0)/M`$ and $`\omega_{220}=\omega_R+i\omega_I`$ with $`\omega_I<0`$, both $`\Delta h^{\mathrm{D}}_{2,0}`$ and $`\Delta h^{\mathrm{S}}_{3,0}`$ are proportional to $`1-e^{2\omega_Iu}`$. The plotted memory modes are normalized by $`|A_{220}|^2`$, with $`A_{220}`$ denoting the spheroidal-mode amplitude at $`t_0`$.
+This example uses `qnm` to construct the explicitly supplied fundamental spin-weighted spheroidal QNM $`(l_{\mathrm{s}},m,n)=(2,2,0)`$ of a Kerr BH with spin $`\chi=0.7`$. Spheroidal-to-spherical mixing preserves $`m`$, so the input waveform has vanishing $`(2,0)`$ and $`(3,0)`$ modes. For $`u=(t-t_0)/M`$ and $`\omega_{220}=\omega_R+i\omega_I`$ with $`\omega_I<0`$, every displacement and spin component is proportional to $`1-e^{2\omega_Iu}`$. The plotted memory modes are normalized by $`|A_{220}|^2`$, with $`A_{220}`$ denoting the spheroidal-mode amplitude at $`t_0`$.
 
 Example outputs:
 
