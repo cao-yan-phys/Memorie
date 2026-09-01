@@ -89,9 +89,12 @@ Example outputs:
 python examples/fastemriwaveforms_emri_h20_h30_demo.py
 ```
 
-This example uses `FastEMRIWaveforms` to generate equatorial Kerr trajectories with initial eccentricities $`e_0=0`$ and $`e_0=0.8`$, mass ratio $`q=10^5`$, and spin $`\chi=0.8`$. It calculates $`h^{\mathrm{D}}_{2,0}`$ and $`h^{\mathrm{S}}_{3,0}`$ from the oscillatory modes and compares the $`e_0=0`$ result with the effective 0PN prediction. The calculation retains only the nonoscillatory (“DC”) component of the memory waveform.
+This example uses `FastEMRIWaveforms` to generate equatorial Kerr trajectories with initial eccentricities $`e_0=0`$ and $`e_0=0.8`$, mass ratio $`q=10^5`$, and spin $`\chi=0.8`$. It calculates $`h^{\mathrm{D}}_{2,0}`$ and $`h^{\mathrm{S}}_{3,0}`$ from the oscillatory modes and compares the results with effective 0PN predictions. The calculation retains only the nonoscillatory (“DC”) component of the memory waveform.
 
-With the default `frequency_source = "geodesic"`, the initial frequency parameter for either trajectory is defined by the azimuthal geodesic fundamental frequency: $`x_0=\left[M\Omega_\phi(t_0)\right]^{2/3}`$.
+> For an eccentric Newtonian binary, orbit averaging gives $h^{\mathrm{S},\mathrm{0PN}}_{3,0}(e)=iC_{30}\nu^2\rho(e)^{7/2}(1-e^2)^{3/2}\left(1+\frac{7}{8}e^2\right)$, where $C_{30}=\frac{16\pi}{25}\sqrt{\frac{30}{7\pi}}$ and $\rho(e)=M/p(e)$; $p(e)$ follows the Peters evolution from the effective initial value $\rho_{\rm eff}$ matched to the $h^{\mathrm{D}}_{2,0}$ DC slope
+>
+
+With the default `frequency_source = "geodesic"`, the initial frequency parameter is defined by the azimuthal geodesic fundamental frequency: $`x_0=\left[M\Omega_\phi(t_0)\right]^{2/3}`$.
 
 Example outputs:
 
@@ -140,7 +143,7 @@ Example outputs:
 python examples/qnm_kerr_ringdown_220_h20_h30_demo.py
 ```
 
-This example uses `qnm` to construct the explicitly supplied fundamental spin-weighted spheroidal QNM $`(l_{\mathrm{s}},m,n)=(2,2,0)`$ of a Kerr BH with spin $`\chi=0.7`$. Spheroidal-to-spherical mixing preserves $`m`$, so the input waveform has vanishing $`(2,0)`$ and $`(3,0)`$ modes. For $`u=(t-t_0)/M`$ and $`\omega_{220}=\omega_R+i\omega_I`$ with $`\omega_I<0`$, every displacement and spin component is proportional to $`1-e^{2\omega_Iu}`$. The plotted memory modes are normalized by $`|A_{220}|^2`$, with $`A_{220}`$ denoting the spheroidal-mode amplitude at $`t_0`$.
+This example uses `qnm` to construct the explicitly supplied fundamental spin-weighted spheroidal QNM $`(l_{\mathrm{s}},m,n)=(2,2,0)`$ of a Kerr BH with spin $`\chi=0.7`$. Spheroidal-to-spherical mixing preserves $`m`$, so the input waveform has vanishing $`(2,0)`$ and $`(3,0)`$ modes. For $`u=(t-t_0)/M`$ and $`\omega_{220}=\omega_R+i\omega_I`$ with $`\omega_I<0`$, each of the displayed displacement and spin components is proportional to $`1-e^{2\omega_Iu}`$. The plotted memory modes are normalized by $`|A_{220}|^2`$, with $`A_{220}`$ denoting the spheroidal-mode amplitude at $`t_0`$.
 
 Example outputs:
 
