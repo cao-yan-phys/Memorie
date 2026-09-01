@@ -9,6 +9,7 @@ from pathlib import Path
 import sys
 
 import numpy as np
+from scipy.integrate import solve_ivp
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
@@ -66,6 +67,78 @@ def _x_0pn_series(t: np.ndarray, x0: float, q: float) -> np.ndarray:
     valid = denominator > 0.0
     x[valid] = denominator[valid] ** -0.25
     return x
+
+
+def _eccentric_effective_0pn_h20_delta(
+    t: np.ndarray,
+    h20: np.ndarray,
+    q: float,
+    e0: float,
+) -> np.ndarray:
+    """Return the exact-in-e Newtonian DC effective 0PN h20 increment."""
+
+    t_arr = np.asarray(t, dtype=float)
+    h20_arr = np.asarray(h20)
+    e0 = float(e0)
+    if len(t_arr) < 2 or len(h20_arr) != len(t_arr):
+        raise ValueError("t and h20 must have matching lengths of at least two")
+    if not (0.0 < e0 < 1.0):
+        raise ValueError("the eccentric effective 0PN model requires 0 < e0 < 1")
+
+    nu = float(q) / (1.0 + float(q)) ** 2
+    slope_index = min(10, len(t_arr) - 1)
+    s_dc = float(
+        np.real(
+            (h20_arr[slope_index] - h20_arr[0])
+            / (t_arr[slope_index] - t_arr[0])
+        )
+    )
+    if s_dc <= 0.0:
+        raise ValueError(f"expected positive DC h20 slope, got {s_dc}")
+
+    c20 = (256.0 / 7.0) * np.sqrt(np.pi / 30.0)
+    eccentric_factor = (1.0 - e0**2) ** 1.5 * (
+        1.0 + (145.0 / 48.0) * e0**2 + (73.0 / 192.0) * e0**4
+    )
+    rho_eff = (s_dc / (c20 * nu**2 * eccentric_factor)) ** 0.2
+    a = 121.0 / 304.0
+    g0 = e0 ** (12.0 / 19.0) * (1.0 + a * e0**2) ** (870.0 / 2299.0)
+    lambda_grid = nu * (t_arr - t_arr[0])
+
+    def rhs(_lambda: float, values: np.ndarray) -> np.ndarray:
+        eccentricity = values[0]
+        g = eccentricity ** (12.0 / 19.0) * (1.0 + a * eccentricity**2) ** (
+            870.0 / 2299.0
+        )
+        rho = rho_eff * g0 / g
+        one_minus_e2 = 1.0 - eccentricity**2
+        de_dlambda = -(
+            (304.0 / 15.0)
+            * rho**4
+            * eccentricity
+            * one_minus_e2**1.5
+            * (1.0 + a * eccentricity**2)
+        )
+        dh20_dlambda = (
+            c20
+            * nu
+            * rho**5
+            * one_minus_e2**1.5
+            * (1.0 + (145.0 / 48.0) * eccentricity**2 + (73.0 / 192.0) * eccentricity**4)
+        )
+        return np.array([de_dlambda, dh20_dlambda])
+
+    solution = solve_ivp(
+        rhs,
+        (float(lambda_grid[0]), float(lambda_grid[-1])),
+        np.array([e0, 0.0]),
+        t_eval=lambda_grid,
+        rtol=1e-10,
+        atol=(1e-12, 1e-16),
+    )
+    if not solution.success or len(solution.t) != len(lambda_grid):
+        raise RuntimeError("eccentric effective 0PN evolution did not cover the requested grid")
+    return solution.y[1]
 
 
 def main() -> int:
@@ -131,6 +204,15 @@ def main() -> int:
     comparison_dh30_norm = (
         comparison_result["h30_dimensionless"] - comparison_result["h30_dimensionless"][0]
     ) / comparison_nu
+    comparison_dh20_eccentric_0pn_norm = (
+        _eccentric_effective_0pn_h20_delta(
+            comparison_t,
+            comparison_result["h20_dimensionless"],
+            comparison_result["q"],
+            args.comparison_e0,
+        )
+        / comparison_nu
+    )
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -160,6 +242,11 @@ def main() -> int:
     comparison_h30_on_csv_grid = _interp_complex_with_nan(
         csv_t, comparison_rel_t, comparison_dh30_norm
     )
+    comparison_h20_eccentric_0pn_on_csv_grid = _interp_complex_with_nan(
+        csv_t,
+        comparison_rel_t,
+        comparison_dh20_eccentric_0pn_norm,
+    )
 
     with csv_path.open("w", newline="", encoding="utf-8") as stream:
         writer = csv.writer(stream, lineterminator="\n")
@@ -178,6 +265,8 @@ def main() -> int:
                 f"FastEMRIWaveforms_e0_{_token(args.comparison_e0)}_delta_h20_imag_over_nu",
                 f"FastEMRIWaveforms_e0_{_token(args.comparison_e0)}_delta_h30_real_over_nu",
                 f"FastEMRIWaveforms_e0_{_token(args.comparison_e0)}_delta_h30_imag_over_nu",
+                f"eccentric_effective_0PN_e0_{_token(args.comparison_e0)}_delta_h20_real_over_nu",
+                f"eccentric_effective_0PN_e0_{_token(args.comparison_e0)}_delta_h20_imag_over_nu",
             ]
         )
         for (
@@ -188,6 +277,7 @@ def main() -> int:
             h30_0pn_value,
             comparison_h20_value,
             comparison_h30_value,
+            comparison_h20_eccentric_0pn_value,
         ) in zip(
             csv_t,
             h20_on_csv_grid,
@@ -196,6 +286,7 @@ def main() -> int:
             h30_0pn_on_csv_grid,
             comparison_h20_on_csv_grid,
             comparison_h30_on_csv_grid,
+            comparison_h20_eccentric_0pn_on_csv_grid,
         ):
             writer.writerow(
                 [
@@ -212,6 +303,8 @@ def main() -> int:
                     comparison_h20_value.imag,
                     comparison_h30_value.real,
                     comparison_h30_value.imag,
+                    comparison_h20_eccentric_0pn_value.real,
+                    comparison_h20_eccentric_0pn_value.imag,
                 ]
             )
 
@@ -224,11 +317,20 @@ def main() -> int:
         y30_0pn = _positive_for_log(np.imag(dh30_0pn_norm))
         comparison_y20 = _positive_for_log(np.real(comparison_dh20_norm))
         comparison_y30 = _positive_for_log(np.imag(comparison_dh30_norm))
-        y20_lim = _positive_log_limits(y20, y20_0pn, comparison_y20)
+        comparison_y20_eccentric_0pn = _positive_for_log(
+            np.real(comparison_dh20_eccentric_0pn_norm)
+        )
+        y20_lim = _positive_log_limits(
+            y20,
+            y20_0pn,
+            comparison_y20,
+            comparison_y20_eccentric_0pn,
+        )
         y30_lim = _positive_log_limits(y30, y30_0pn, comparison_y30)
-        few_label = rf"$\mathtt{{FastEMRIWaveforms}}$, $e_0={args.e0:g}$"
-        comparison_label = rf"$\mathtt{{FastEMRIWaveforms}}$, $e_0={args.comparison_e0:g}$"
+        few_label = rf"$\mathtt{{FastEMRIWaveforms}}$ ($e_0={args.e0:g}$)"
+        comparison_label = rf"$\mathtt{{FastEMRIWaveforms}}$ ($e_0={args.comparison_e0:g}$)"
         effective_label = rf"effective 0PN ($e_0={args.e0:g}$)"
+        comparison_effective_label = rf"effective 0PN ($e_0={args.comparison_e0:g}$)"
 
         fig, axes = plt.subplots(2, 1, figsize=(9, 7), sharex=True, constrained_layout=True)
         axes[0].plot(rel_t[plot_idx], y20[plot_idx], color="black", linewidth=1.4, label=few_label)
@@ -247,11 +349,19 @@ def main() -> int:
             linewidth=1.3,
             label=effective_label,
         )
+        axes[0].plot(
+            comparison_rel_t[comparison_plot_idx],
+            comparison_y20_eccentric_0pn[comparison_plot_idx],
+            color="red",
+            linestyle="--",
+            linewidth=1.3,
+            label=comparison_effective_label,
+        )
         axes[0].set_yscale("log")
         axes[0].set_ylim(*y20_lim)
         axes[0].set_ylabel(r"$\mathrm{Re}\,\Delta h^{\mathrm{D}}_{2,0}/(\nu M/R)$")
         axes[0].grid(True, which="both", alpha=0.25)
-        axes[0].legend(loc="best", frameon=False)
+        axes[0].legend(loc="best", frameon=False, ncol=2)
 
         axes[1].plot(rel_t[plot_idx], y30[plot_idx], color="black", linewidth=1.4, label=few_label)
         axes[1].plot(
