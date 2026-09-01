@@ -98,7 +98,11 @@ python examples/fastemriwaveforms_emri_h20_h30_demo.py
 
 This example uses `FastEMRIWaveforms` to generate equatorial Kerr trajectories with initial eccentricities $`e_0=0`$ and $`e_0=0.8`$, mass ratio $`q=10^5`$, and spin $`\chi=0.8`$. It calculates $`h^{\mathrm{D}}_{2,0}`$ and $`h^{\mathrm{S}}_{3,0}`$ from the oscillatory modes and compares the results with effective 0PN predictions. The calculation retains only the nonoscillatory (“DC”) component of the memory waveform.
 
-For an eccentric Newtonian binary, [Favata](https://arxiv.org/abs/1108.3121) gives $\left\langle d h^{\mathrm{D},\mathrm{0PN}}_{2,0}/d(t/M)\right\rangle=\frac{256}{7}\sqrt{\frac{\pi}{30}}\frac{\nu^2 M}{R}\rho(e)^5(1-e^2)^{3/2}\left(1+\frac{145}{48}e^2+\frac{73}{192}e^4\right)$, while $\left\langle h ^{\mathrm{S},\mathrm{0PN}}_{3,0}(e)\right\rangle=iC_{30}\frac{\nu^2 M}{R}\rho(e)^{7/2}(1-e^2)^{3/2}\left(1+\frac{7}{8}e^2\right)$, where $C_{30}=\frac{16\pi}{25}\sqrt{\frac{30}{7\pi}}$ and $\rho(e)=M/p(e)$; the semilatus rectum $p(e)$ follows the [Peters](https://journals.aps.org/pr/abstract/10.1103/PhysRev.136.B1224) evolution from the effective initial value $\rho_{\mathrm{eff}}$ matched to the $h^{\mathrm{D}}_{2,0}$ DC slope.
+For an eccentric Newtonian binary, [Favata](https://arxiv.org/abs/1108.3121) gives $\left\langle d h^{\mathrm{D},\mathrm{0PN}}_{2,0}/d(t/M)\right\rangle=\frac{256}{7}\sqrt{\frac{\pi}{30}}\frac{\nu^2 M}{R}\rho(e)^5(1-e^2)^{3/2}\left(1+\frac{145}{48}e^2+\frac{73}{192}e^4\right)$.
+
+The leading spin mode is $\left\langle h^{\mathrm{S},\mathrm{0PN}}_{3,0}(e)\right\rangle=i\frac{16\pi}{25}\sqrt{\frac{30}{7\pi}}\frac{\nu^2 M}{R}\rho(e)^{7/2}(1-e^2)^{3/2}\left(1+\frac{7}{8}e^2\right)$.
+
+Here $\rho(e)=M/p(e)$; the semilatus rectum $p(e)$ follows the [Peters](https://journals.aps.org/pr/abstract/10.1103/PhysRev.136.B1224) evolution from the effective initial value $\rho_{\mathrm{eff}}$ matched to the $h^{\mathrm{D}}_{2,0}$ DC slope.
 
 With the default `frequency_source = "geodesic"`, the initial frequency parameter is defined by the azimuthal geodesic fundamental frequency: $`x_0=\left[M\Omega_\phi(t_0)\right]^{2/3}`$.
 
@@ -178,7 +182,7 @@ $$
 \begin{align}
 F_l(v)&=4\pi\sqrt{\frac{(l-2)!}{(l+2)!}}\frac{(1-v^2)^2}{2v^2}\int_{-1}^1dz \frac{P_l(z)}{(1-vz)^3}
 \\
-&=\frac{2^{l+1}\pi(l!)^2}{(2l+1)!}\sqrt{\frac{(l+1)(l+2)}{(l-1)l}}v^{l-2}\,{}_2F_1\left(\frac{l-1}{2},\frac{l}{2};l+\frac{3}{2};v^2\right)
+&=\frac{2^{l+1}\pi(l!)^2}{(2l+1)!}\sqrt{\frac{(l+1)(l+2)}{(l-1)l}}v^{l-2}{}_2F_1\left(\frac{l-1}{2},\frac{l}{2};l+\frac{3}{2};v^2\right)
 ,
 \end{align}
 $$
