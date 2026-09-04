@@ -96,15 +96,9 @@ This example compares the `SEOBNRv5PHM` waveform (including null memory contribu
 python examples/fastemriwaveforms_emri_h20_h30_demo.py
 ```
 
-This example uses `FastEMRIWaveforms` to generate equatorial Kerr trajectories with initial eccentricities $`e_0=0`$ and $`e_0=0.8`$, mass ratio $`q=10^5`$, and spin $`\chi=0.8`$. It calculates $`h^{\mathrm{D}}_{2,0}`$ and $`h^{\mathrm{S}}_{3,0}`$ from the oscillatory modes and compares the results with effective 0PN predictions. The calculation retains only the nonoscillatory (“DC”) component of the memory waveform.
+This example uses `FastEMRIWaveforms` to generate equatorial Kerr trajectories with initial eccentricities $`e_0=0`$ and $`e_0=0.8`$, mass ratio $`q=10^5`$, and spin $`\chi=0.8`$. It calculates $`h^{\mathrm{D}}_{2,0}`$ and $`h^{\mathrm{S}}_{3,0}`$ from the oscillatory modes and compares the results with effective 0PN predictions. The calculation retains only the nonoscillatory (“DC”) component of the memory waveform. With the default `frequency_source = "geodesic"`, the initial frequency parameter is defined by the azimuthal geodesic fundamental frequency: $`x_0=\left[M\Omega_\phi(t_0)\right]^{2/3}`$.
 
-For an eccentric Newtonian binary, [Favata](https://arxiv.org/abs/1108.3121) gives $\left\langle d h^{\mathrm{D},\mathrm{0PN}}_{2,0}/d(t/M)\right\rangle=\frac{256}{7}\sqrt{\frac{\pi}{30}}\frac{\nu^2 M}{R}\rho(e)^5(1-e^2)^{3/2}\left(1+\frac{145}{48}e^2+\frac{73}{192}e^4\right)$.
-
-The leading spin mode is $\left\langle h^{\mathrm{S},\mathrm{0PN}}_{3,0}(e)\right\rangle=i\frac{16\pi}{25}\sqrt{\frac{30}{7\pi}}\frac{\nu^2 M}{R}\rho(e)^{7/2}(1-e^2)^{3/2}\left(1+\frac{7}{8}e^2\right)$.
-
-Here $\rho(e)=M/p(e)$; the semilatus rectum $p(e)$ follows the [Peters](https://journals.aps.org/pr/abstract/10.1103/PhysRev.136.B1224) evolution from the effective initial value $\rho_{\mathrm{eff}}$ matched to the $h^{\mathrm{D}}_{2,0}$ DC slope.
-
-With the default `frequency_source = "geodesic"`, the initial frequency parameter is defined by the azimuthal geodesic fundamental frequency: $`x_0=\left[M\Omega_\phi(t_0)\right]^{2/3}`$.
+For an eccentric Newtonian binary, [Favata](https://arxiv.org/abs/1108.3121) gives $`\left\langle d h^{\mathrm{D},\mathrm{0PN}}_{2,0}/d(t/M)\right\rangle=\frac{256}{7}\sqrt{\frac{\pi}{30}}\frac{\nu^2 M}{R}\rho(e)^5(1-e^2)^{3/2}\left(1+\frac{145}{48}e^2+\frac{73}{192}e^4\right)`$, where $\rho(e)=M/p(e)$. The leading spin-memory mode is $`\left\langle h^{\mathrm{S},\mathrm{0PN}}_{3,0}(e)\right\rangle=i\frac{16\pi}{25}\sqrt{\frac{30}{7\pi}}\frac{\nu^2 M}{R}\rho(e)^{7/2}(1-e^2)^{3/2}\left(1+\frac{7}{8}e^2\right)`$. The effective 0PN prediction uses the semilatus rectum $p(e)$ following the [Peters](https://journals.aps.org/pr/abstract/10.1103/PhysRev.136.B1224) evolution from the effective initial value $\rho_{\mathrm{eff}}$ matched to the $h^{\mathrm{D}}_{2,0}$ DC slope.
 
 Example outputs:
 
@@ -162,7 +156,7 @@ Example outputs:
 
 <p align="center"><img src="examples/output/qnm_kerr_ringdown_220_h20_h30_chi0p7.png?v=fec4d76d8a84" alt="qnm 220 ringdown memory modes" width="85%"></p>
 
-## The Rise and Fall of Displacement Memory at Finite Radius
+## The Persistence of Displacement Memory
 
 The effective source of null displacement memory can be modeled by $`[r^2T_{ij}(u=t-r,\mathbf{x}=r\mathbf{n})]=\left(\frac{dE_\text{null}}{dud\Omega_\mathbf{n}}\right)_u n_i n_j`$, with $`|\mathbf{n}|=1`$. This describes the null radiation emitted by a point source. Following [Wiseman and Will](https://journals.aps.org/prd/abstract/10.1103/PhysRevD.44.R2945), a solution to the linearized Einstein equation in a flat background (after TT projection) can be written as
 
@@ -170,7 +164,7 @@ $$
 h(t,R,\hat{\mathbf{k}})=\sum_{l,m}h_{l,m}(t,R){}_{-2}Y_{lm}(\hat{\mathbf{k}})=\int_{-\infty}^{t-R}\frac{du}{4\pi(t-u)}\int_{\mathbf{n}} \frac{16\pi [r^2T_{ij}(u,\mathbf{x}=r\mathbf{n})]\frac{e_{ij}^+(\hat{\mathbf{k}})-ie_{ij}^\times(\hat{\mathbf{k}})}{2}}{1-\left(\frac{R}{t-u}\right)\mathbf{n}\cdot\hat{\mathbf{k}}}.
 $$
 
-It follows that
+(At finite radius, this TT projection does not by itself isolate the radiation field.) It follows that
 
 $$
 h_{l,m}(t,R)=\int_{-\infty}^{t-R}du \frac{4}{t-u}\int_{\mathbf{n}} \left(\frac{dE_\text{null}}{dud\Omega_\mathbf{n}}\right)_u F_l(v)Y_{lm}^*(\mathbf{n}),
@@ -229,7 +223,7 @@ Recall that $`\mathcal{A}_l(1)=1`$.
 
 <p align="center">  <img src="forgetting_curve.jpg" alt="forgetting curve" width="50%"></p><p align="center"><sub>The forgetting curve</sub></p>
 
-At finite radius, the early-time growth of displacement memory is also suppressed relative to its null-infinity counterpart. As a concrete example, consider a quasi-circular binary. At leading PN order,
+At finite radius, the early-time growth of $h_{l,m}$ is also suppressed relative to its null-infinity counterpart. As a concrete example, consider a quasi-circular binary. At leading PN order,
 
 $$
 \frac{d h_{2,0}^\infty(u)}{du}=\frac{128}{105}\sqrt{30\pi}\frac{\nu^2}{R}x^5,
@@ -249,7 +243,7 @@ $$
 
 In the null-infinity limit, $`\mathcal{B}(\rho\to\infty)\to 1`$. At finite radius, in the ancient-time limit, $`\rho\to 0`$, we find $`\mathcal{B}(\rho)=-\frac{\rho}{5}\ln \rho+\mathcal{O}(\rho)\to 0`$.
 
-A general finite-radius waveform calculator based on this model will be added in a future version.
+However, for a distant interferometric detector in the wave zone, the memory waveform $h_{l,m}^\infty(U)$ at null infinity gives the complete detector response at leading order in $1/R$, even though $h_{l,m}(t,R)$ eventually fades away.
 
 ## Restoration of Displacement Memory in Schwarzschild Scattering
 
