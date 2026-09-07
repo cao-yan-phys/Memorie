@@ -20,6 +20,7 @@ nrhybsur3dq8-cce = ["pyseobnr", "gwsurrogate", "matplotlib"]
 fastemriwaveforms = ["fastemriwaveforms", "matplotlib"]
 superrad = ["superrad", "matplotlib"]
 qnm = ["qnm", "matplotlib"]
+surfinbh = ["surfinBH"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

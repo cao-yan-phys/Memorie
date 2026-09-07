@@ -1,5 +1,3 @@
-"""Core vacuum nonlinear-null memory routines."""
-
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
@@ -20,7 +18,6 @@ _DEFAULT_CACHE_LMAX = 10
 
 
 def parity_sign(n: int) -> float:
-    """Return ``(-1)**n`` as a float."""
 
     return -1.0 if int(n) % 2 else 1.0
 
@@ -37,7 +34,6 @@ def _parse_mode_key(key: Any) -> Mode:
 
 
 def normalize_mode_dict(h: Mapping[Any, Any]) -> ModeDict:
-    """Normalize mode keys and convert arrays to NumPy arrays."""
 
     out: ModeDict = {}
     for key, value in h.items():
@@ -48,7 +44,6 @@ def normalize_mode_dict(h: Mapping[Any, Any]) -> ModeDict:
 
 
 def complete_nonprecessing_modes(h: Mapping[Any, Any]) -> ModeDict:
-    """Fill missing negative-m modes using ``h_{l,-m}=(-1)^l conj(h_lm)``."""
 
     out = dict(normalize_mode_dict(h))
     for (ell, emm), hlm in list(out.items()):
@@ -73,7 +68,6 @@ def validate_mode_lengths(t: np.ndarray, h: Mapping[Mode, np.ndarray]) -> None:
 
 
 def differentiate_modes(t: Any, h: Mapping[Any, Any], edge_order: int = 2) -> ModeDict:
-    """Differentiate all modes on a strictly increasing grid."""
 
     t_arr = validate_time_grid(t)
     h_norm = normalize_mode_dict(h)
@@ -86,7 +80,6 @@ def differentiate_modes(t: Any, h: Mapping[Any, Any], edge_order: int = 2) -> Mo
 
 
 def cumulative_integral(t: Any, y: Any) -> np.ndarray:
-    """Cumulative trapezoidal integral with initial value zero."""
 
     t_arr = validate_time_grid(t)
     y_arr = np.asarray(y)
@@ -101,7 +94,6 @@ def _valid_mode(ell: int, emm: int) -> bool:
 
 @lru_cache(maxsize=None)
 def gamma_displacement(L: int, M: int, l1: int, m1: int, l2: int, m2: int) -> float:
-    """Angular coefficient for vacuum nonlinear-null displacement memory."""
 
     if L < 2 or abs(M) > L or l1 < 2 or l2 < 2:
         return 0.0
@@ -133,7 +125,6 @@ def B_coefficient(
     l2: int,
     m2: int,
 ) -> float:
-    """Integral of ``_s1Y_l1m1 _s2Y_l2m2 conjugate(_{s1+s2}Y_LM)``."""
 
     if M != m1 + m2 or abs(M) > L:
         return 0.0
@@ -157,7 +148,6 @@ def B_coefficient(
 
 @lru_cache(maxsize=None)
 def C_coefficient(L: int, M: int, l1: int, m1: int, l2: int, m2: int) -> float:
-    """Angular coefficient shared by spin and CM memory."""
 
     term1 = 3.0 * sqrt((l1 - 1) * (l1 + 2)) * B_coefficient(
         L, M, -1, l1, m1, 2, l2, m2
@@ -180,7 +170,6 @@ def _spin_cm_prefactor(L: int, m2: int) -> float:
 
 @lru_cache(maxsize=None)
 def gamma_spin(L: int, M: int, l1: int, m1: int, l2: int, m2: int) -> float:
-    """Direct strain-mode coefficient for spin memory."""
 
     if L < 2 or abs(M) > L:
         return 0.0
@@ -196,7 +185,6 @@ def gamma_spin(L: int, M: int, l1: int, m1: int, l2: int, m2: int) -> float:
 
 @lru_cache(maxsize=None)
 def gamma_cm(L: int, M: int, l1: int, m1: int, l2: int, m2: int) -> float:
-    """Direct strain-mode coefficient for vacuum-null CM memory."""
 
     if L < 2 or abs(M) > L:
         return 0.0
@@ -219,10 +207,6 @@ def precompute_memory_coeffs(
     tol: float = 1e-15,
     use_cache: bool = True,
 ) -> list[UnifiedCoeff]:
-    """Build coefficient table entries ``(..., Gamma_D, Gamma_S, Gamma_CM)``.
-
-    All valid azimuthal modes are tabulated, including ``|m|=1``.
-    """
 
     if use_cache:
         cached = load_precomputed_memory_coeffs(
@@ -278,7 +262,6 @@ def load_precomputed_memory_coeffs(
     l1_min: int = 2,
     tol: float = 1e-15,
 ) -> list[UnifiedCoeff] | None:
-    """Load bundled coefficient tables when they match the requested setup."""
 
     if lmax != _DEFAULT_CACHE_LMAX or l2_max != _DEFAULT_CACHE_LMAX:
         return None
@@ -307,7 +290,6 @@ def compute_vacuum_null_memory_mode(
     edge_order: int = 2,
     include_cm: bool = True,
 ) -> dict[str, Any]:
-    """Compute displacement and spin observables, optionally including CM memory."""
 
     coeff_list = list(coeffs)
     if not coeff_list:
@@ -373,7 +355,6 @@ def compute_memory_modes(
     hdot: Mapping[Any, Any] | None = None,
     include_cm: bool = True,
 ) -> dict[tuple[int, int], dict[str, Any]]:
-    """Compute several target modes using one differentiated mode dictionary."""
 
     t_arr = validate_time_grid(t)
     h_norm = normalize_mode_dict(h)

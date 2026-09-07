@@ -1,5 +1,3 @@
-"""SuperRad helpers for slowly varying axisymmetric memory modes."""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -17,14 +15,6 @@ DEFAULT_TARGETS: tuple[Mode, ...] = ((2, 0), (3, 0))
 
 @dataclass(frozen=True)
 class SuperRadConfig:
-    """Parameters for a SuperRad boson-cloud memory calculation.
-
-    ``alpha`` is the dimensionless gravitational fine-structure constant.  The
-    ``growth_start_fraction`` selects how far back from cloud saturation to
-    begin, as a fraction of SuperRad's cloud-growth time.  The endpoint is in
-    units of SuperRad's post-saturation GW dissipation time, with ``t=0`` at
-    cloud saturation.
-    """
 
     black_hole_mass_msun: float = 20.8
     black_hole_spin: float = 0.7
@@ -47,7 +37,6 @@ def _as_1d_real(values: Any, size: int) -> np.ndarray:
 
 
 def _full_evolution_coefficients(waveform: Any, t_seconds: np.ndarray) -> np.ndarray:
-    """Evaluate SuperRad's instantaneous spherical-harmonic coefficients."""
 
     t_internal = t_seconds / waveform._tunit
     mass_bh = _as_1d_real(waveform._Mbh(t_internal), len(t_seconds))
@@ -64,7 +53,6 @@ def _full_evolution_coefficients(waveform: Any, t_seconds: np.ndarray) -> np.nda
 
 
 def _spherical_coefficients(waveform: Any, t_seconds: np.ndarray) -> np.ndarray:
-    """Return phase-stripped SuperRad coefficients for each supplied time."""
 
     if callable(getattr(waveform, "_Mbh", None)):
         return _full_evolution_coefficients(waveform, t_seconds)
@@ -112,7 +100,6 @@ def _evolution_time_grid(
     config: SuperRadConfig,
     gw_time_seconds: float,
 ) -> np.ndarray:
-    """Resolve cloud growth, saturation, and the slower dissipative era."""
 
     growth_start_seconds = -config.growth_start_fraction * float(
         waveform.cloud_growth_time()
@@ -161,21 +148,6 @@ def compute_superrad_memory_modes(
     targets: Iterable[Mode] = DEFAULT_TARGETS,
     lmax: int = 10,
 ) -> dict[str, Any]:
-    """Construct SuperRad radiative modes and their slowly varying M=0 memory.
-
-    SuperRad supplies the phase-stripped coefficients of the radiative modes
-    ``(ell, 2 m_cloud)``.  This helper restores the common GW phase, constructs
-    the negative-m partners, and supplies derivatives with the rapid carrier
-    term evaluated analytically to :func:`compute_memory_modes`.  It deliberately
-    accepts only ``M=0`` targets: their bilinear sources cancel the rapid
-    continuous-wave phase and can be evaluated on the cloud-evolution time grid.
-
-    This adapter computes displacement and spin memory only; it does not
-    calculate CM memory modes.  Returned radiative and memory amplitudes are
-    distance-rescaled and normalized by the initial black-hole mass.
-    Cumulative displacement and spin-memory integrals start from zero at the
-    first requested time.
-    """
 
     cfg = SuperRadConfig() if config is None else config
     target_modes = tuple((int(ell), int(emm)) for ell, emm in targets)

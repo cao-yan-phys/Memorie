@@ -1,9 +1,3 @@
-"""Compare SEOBNRv5EHM perturbative h20/h30 with NRHybSur3dq8_CCE h20/h30.
-
-The SEOBNRv5EHM starting orbital frequency is measured from the initial
-NRHybSur3dq8_CCE h22 mode. Both comparisons plot h(t)-h(t0).
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -42,18 +36,6 @@ def _normalize_surrogate_modes(raw_modes: dict) -> dict[tuple[int, int], np.ndar
 def _orbital_frequency_from_h22(t: np.ndarray, h22: np.ndarray) -> np.ndarray:
     phase = np.unwrap(np.angle(h22))
     return 0.5 * np.abs(np.gradient(phase, t, edge_order=2))
-
-
-def _fit_initial_orbital_frequency(
-    t: np.ndarray,
-    h22: np.ndarray,
-    fit_duration: float,
-) -> float:
-    n_fit = int(np.searchsorted(t, t[0] + fit_duration, side="right"))
-    n_fit = max(8, min(n_fit, len(t)))
-    phase = np.unwrap(np.angle(h22[:n_fit]))
-    slope, _intercept = np.polyfit(t[:n_fit] - t[0], phase, deg=1)
-    return float(abs(slope) / 2.0)
 
 
 def _find_cce_start_time(
@@ -130,7 +112,6 @@ def _generate_pyseobnr_modes(
 
 
 def _interp_complex_with_plateau(x_new: np.ndarray, x: np.ndarray, y: np.ndarray) -> np.ndarray:
-    """Interpolate a complex series and hold its final value beyond the end."""
 
     return np.interp(x_new, x, np.real(y)) + 1j * np.interp(x_new, x, np.imag(y))
 
@@ -193,17 +174,118 @@ def _format_complex(value: complex) -> str:
     return f"{value.real:+.6e}{value.imag:+.6e}j"
 
 
+def _plot_linear_h20_comparison(
+    cce_time: np.ndarray,
+    cce_h20: np.ndarray,
+    cce_perturbative_h20: np.ndarray,
+    pyseobnr_time: np.ndarray,
+    pyseobnr_h20: np.ndarray,
+    png_path: Path,
+    pyseobnr_approximant: str,
+) -> None:
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.axes_grid1.inset_locator import mark_inset
+
+    figure, axis = plt.subplots(figsize=(9, 3.7), constrained_layout=True)
+    axis.plot(
+        cce_time,
+        np.real(cce_h20),
+        color="black",
+        linewidth=1.4,
+        label=r"$\mathtt{NRHybSur3dq8\_CCE}$",
+    )
+    axis.plot(
+        cce_time,
+        np.real(cce_perturbative_h20),
+        color="blue",
+        linestyle="-",
+        linewidth=1.3,
+        label=r"$\mathtt{NRHybSur3dq8\_CCE}$ perturbative",
+    )
+    axis.plot(
+        pyseobnr_time,
+        np.real(pyseobnr_h20),
+        color="red",
+        linestyle="--",
+        linewidth=1.3,
+        label=rf"$\mathtt{{{pyseobnr_approximant}}}$ perturbative",
+    )
+    axis.set_ylabel(r"$\mathrm{Re}\,\Delta h_{2,0}/(\nu M/R)$")
+    axis.set_xlabel(r"$t-t_0$ [$M$]")
+    axis.grid(True, alpha=0.25)
+    axis.legend(loc="best", frameon=False)
+
+    end_time = float(np.nanmax(cce_time))
+    inset_start = max(float(np.nanmin(cce_time)), end_time - 2500.0)
+    cce_inset_mask = cce_time >= inset_start
+    pyseobnr_inset_mask = pyseobnr_time >= inset_start
+    inset = axis.inset_axes([0.53, 0.32, 0.37, 0.42])
+    inset.plot(cce_time[cce_inset_mask], np.real(cce_h20[cce_inset_mask]), color="black", linewidth=1.2)
+    inset.plot(
+        cce_time[cce_inset_mask],
+        np.real(cce_perturbative_h20[cce_inset_mask]),
+        color="blue",
+        linewidth=1.1,
+    )
+    inset.plot(
+        pyseobnr_time[pyseobnr_inset_mask],
+        np.real(pyseobnr_h20[pyseobnr_inset_mask]),
+        color="red",
+        linestyle="--",
+        linewidth=1.1,
+    )
+    inset.set_xlim(inset_start, end_time)
+    inset_values = np.concatenate(
+        [
+            np.real(cce_h20[cce_inset_mask]),
+            np.real(cce_perturbative_h20[cce_inset_mask]),
+            np.real(pyseobnr_h20[pyseobnr_inset_mask]),
+        ]
+    )
+    inset_values = inset_values[np.isfinite(inset_values)]
+    inset_span = float(np.ptp(inset_values))
+    inset_padding = 0.08 * inset_span if inset_span else max(abs(float(inset_values[0])) * 0.08, 1e-16)
+    inset.set_ylim(float(np.min(inset_values)) - inset_padding, float(np.max(inset_values)) + inset_padding)
+    inset.tick_params(labelsize=7)
+    inset.grid(alpha=0.22, linewidth=0.5)
+    mark_inset(axis, inset, loc1=1, loc2=4, fc="none", ec="0.35", linewidth=0.75)
+    figure.savefig(png_path, dpi=180)
+    plt.close(figure)
+
+
+def _replot_linear_h20_from_csv(
+    csv_path: Path,
+    png_path: Path,
+    pyseobnr_approximant: str,
+) -> None:
+    data = np.genfromtxt(csv_path, delimiter=",", names=True)
+    time = np.asarray(data["t_minus_t0_M"], dtype=float)
+    cce_h20 = np.asarray(data["NRHybSur3dq8_CCE_delta_h20_real_over_nu"], dtype=float)
+    cce_perturbative_h20 = np.asarray(
+        data["NRHybSur3dq8_CCE_perturbative_delta_h20_real_over_nu"], dtype=float
+    )
+    pyseobnr_h20 = np.asarray(data["SEOBNRv5EHM_delta_h20_real_over_nu"], dtype=float)
+    _plot_linear_h20_comparison(
+        time,
+        cce_h20,
+        cce_perturbative_h20,
+        time,
+        pyseobnr_h20,
+        png_path,
+        pyseobnr_approximant,
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--q", type=float, default=2.0)
     parser.add_argument("--x-start", type=float, default=DEFAULT_X_START)
     parser.add_argument("--cce-stop", type=float, default=100.0)
-    parser.add_argument("--delta-t", type=float, default=20.0, help="NRHybSur3dq8_CCE/output spacing in units of M")
+    parser.add_argument("--delta-t", type=float, default=20.0)
     parser.add_argument("--cce-refinement-start", type=float, default=-3000.0)
     parser.add_argument("--cce-refinement-delta-t", type=float, default=0.5)
-    parser.add_argument("--pyseobnr-delta-t", type=float, default=1.0, help="pyseobnr time step in units of M")
+    parser.add_argument("--pyseobnr-delta-t", type=float, default=1.0)
     parser.add_argument("--pyseobnr-approximant", default="SEOBNRv5EHM")
-    parser.add_argument("--fit-duration", type=float, default=4000.0)
     parser.add_argument("--search-start", type=float, default=-2_500_000.0)
     parser.add_argument("--search-stop", type=float, default=-1_000_000.0)
     parser.add_argument("--search-dt", type=float, default=200.0)
@@ -211,7 +293,25 @@ def main() -> int:
     parser.add_argument("--total-mass-solar", type=float, default=50.0)
     parser.add_argument("--max-plot-points", type=int, default=8000)
     parser.add_argument("--output-dir", default=str(ROOT / "examples" / "output"))
+    parser.add_argument("--plot-from-csv", action="store_true")
     args = parser.parse_args()
+
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    stem = f"seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q{args.q:g}_x{args.x_start:g}"
+    csv_path = output_dir / f"{stem}.csv"
+    png_path = output_dir / f"{stem}.png"
+    linear_h20_png_path = output_dir / f"{stem}_h20_linear.png"
+    if args.plot_from_csv:
+        if not csv_path.exists():
+            raise FileNotFoundError(f"cannot replot missing CSV: {csv_path}")
+        _replot_linear_h20_from_csv(
+            csv_path,
+            linear_h20_png_path,
+            args.pyseobnr_approximant,
+        )
+        print(f"Redrew linear h20 comparison: {linear_h20_png_path}")
+        return 0
 
     try:
         import gwsurrogate
@@ -237,7 +337,21 @@ def main() -> int:
         args.cce_refinement_start,
         args.cce_refinement_delta_t,
     )
-    omega_pyseobnr_start = _fit_initial_orbital_frequency(t_cce, h_cce[(2, 2)], args.fit_duration)
+    cce_oscillatory_modes = {
+        mode: values
+        for mode, values in complete_nonprecessing_modes(h_cce).items()
+        if mode[1] != 0
+    }
+    cce_hdot = differentiate_modes(t_cce, cce_oscillatory_modes)
+    cce_memory = compute_memory_modes(
+        t_cce,
+        cce_oscillatory_modes,
+        [(2, 0)],
+        lmax=args.lmax,
+        hdot=cce_hdot,
+    )
+    h20_cce_perturbative = cce_memory[(2, 0)]["h_displacement"]
+    omega_pyseobnr_start = _orbital_frequency_from_h22(t_cce, h_cce[(2, 2)])[0]
     t_pyseobnr, pyseobnr_modes = _generate_pyseobnr_modes(
         args.q,
         omega_pyseobnr_start,
@@ -245,6 +359,9 @@ def main() -> int:
         args.total_mass_solar,
         args.pyseobnr_approximant,
     )
+    omega_pyseobnr_actual_start = _orbital_frequency_from_h22(
+        t_pyseobnr, pyseobnr_modes[(2, 2)]
+    )[0]
     pyseobnr_hdot = differentiate_modes(t_pyseobnr, pyseobnr_modes)
     pyseobnr_memory = compute_memory_modes(
         t_pyseobnr,
@@ -261,6 +378,7 @@ def main() -> int:
     rel_pyseobnr = t_pyseobnr - t_pyseobnr[0]
     pyseobnr_plateau_duration = max(0.0, float(rel_cce[-1] - rel_pyseobnr[-1]))
     dh20_cce = h_cce[(2, 0)] - h_cce[(2, 0)][0]
+    dh20_cce_perturbative = h20_cce_perturbative - h20_cce_perturbative[0]
     dh30_cce = h_cce[(3, 0)] - h_cce[(3, 0)][0]
     dh20_pyseobnr = h20_pyseobnr - h20_pyseobnr[0]
     dh30_pyseobnr = h30_pyseobnr - h30_pyseobnr[0]
@@ -269,21 +387,18 @@ def main() -> int:
     x_eff = infer_x_eff_from_dh20(dh20_dt_pyseobnr[0], args.q)
 
     dh20_cce_norm = dh20_cce / nu
+    dh20_cce_perturbative_norm = dh20_cce_perturbative / nu
     dh20_pyseobnr_norm = dh20_pyseobnr / nu
     dh30_cce_norm = dh30_cce / nu
     dh30_pyseobnr_norm = dh30_pyseobnr / nu
 
-    output_dir = Path(args.output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-    stem = f"seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q{args.q:g}_x{args.x_start:g}"
-    csv_path = output_dir / f"{stem}.csv"
-    png_path = output_dir / f"{stem}.png"
     points_per_model = max(16, args.max_plot_points // 2)
     cce_plot_idx = _endpoint_refined_indices(rel_cce, points_per_model)
     pyseobnr_plot_idx = _endpoint_refined_indices(rel_pyseobnr, points_per_model)
     cce_plot_idx = _include_extrema(
         cce_plot_idx,
         np.real(dh20_cce_norm),
+        np.real(dh20_cce_perturbative_norm),
         np.imag(dh30_cce_norm),
     )
     pyseobnr_plot_idx = _include_extrema(
@@ -301,6 +416,9 @@ def main() -> int:
         )
     )
     dh20_cce_csv = _interp_complex_with_plateau(csv_t, rel_cce, dh20_cce_norm)
+    dh20_cce_perturbative_csv = _interp_complex_with_plateau(
+        csv_t, rel_cce, dh20_cce_perturbative_norm
+    )
     dh30_cce_csv = _interp_complex_with_plateau(csv_t, rel_cce, dh30_cce_norm)
     dh20_pyseobnr_csv = _interp_complex_with_plateau(
         csv_t, rel_pyseobnr, dh20_pyseobnr_norm
@@ -310,12 +428,14 @@ def main() -> int:
     )
 
     with csv_path.open("w", newline="", encoding="utf-8") as stream:
-        writer = csv.writer(stream)
+        writer = csv.writer(stream, lineterminator="\n")
         writer.writerow(
             [
                 "t_minus_t0_M",
                 "NRHybSur3dq8_CCE_delta_h20_real_over_nu",
                 "NRHybSur3dq8_CCE_delta_h20_imag_over_nu",
+                "NRHybSur3dq8_CCE_perturbative_delta_h20_real_over_nu",
+                "NRHybSur3dq8_CCE_perturbative_delta_h20_imag_over_nu",
                 "SEOBNRv5EHM_delta_h20_real_over_nu",
                 "SEOBNRv5EHM_delta_h20_imag_over_nu",
                 "NRHybSur3dq8_CCE_delta_h30_real_over_nu",
@@ -327,17 +447,20 @@ def main() -> int:
         for values in zip(
             csv_t,
             dh20_cce_csv,
+            dh20_cce_perturbative_csv,
             dh20_pyseobnr_csv,
             dh30_cce_csv,
             dh30_pyseobnr_csv,
             strict=True,
         ):
-            time_value, c20, e20, c30, e30 = values
+            time_value, c20, c20_perturbative, e20, c30, e30 = values
             writer.writerow(
                 [
                     time_value,
                     c20.real,
                     c20.imag,
+                    c20_perturbative.real,
+                    c20_perturbative.imag,
                     e20.real,
                     e20.imag,
                     c30.real,
@@ -366,10 +489,12 @@ def main() -> int:
     pyseobnr_plot_t = rel_pyseobnr[pyseobnr_plot_idx]
     y20_pyseobnr_plot = y20_pyseobnr[pyseobnr_plot_idx]
     y30_pyseobnr_plot = y30_pyseobnr[pyseobnr_plot_idx]
+    h20_pyseobnr_plot = np.real(dh20_pyseobnr_norm[pyseobnr_plot_idx])
     if pyseobnr_plateau_duration:
         pyseobnr_plot_t = np.append(pyseobnr_plot_t, rel_cce[-1])
         y20_pyseobnr_plot = np.append(y20_pyseobnr_plot, y20_pyseobnr[-1])
         y30_pyseobnr_plot = np.append(y30_pyseobnr_plot, y30_pyseobnr[-1])
+        h20_pyseobnr_plot = np.append(h20_pyseobnr_plot, h20_pyseobnr_plot[-1])
 
     fig, axes = plt.subplots(2, 1, figsize=(9, 7), sharex=True, constrained_layout=True)
     axes[0].plot(
@@ -420,13 +545,29 @@ def main() -> int:
     )
     fig.savefig(png_path, dpi=180)
     plt.close(fig)
+    _plot_linear_h20_comparison(
+        rel_cce[cce_plot_idx],
+        dh20_cce_norm[cce_plot_idx],
+        dh20_cce_perturbative_norm[cce_plot_idx],
+        pyseobnr_plot_t,
+        h20_pyseobnr_plot,
+        linear_h20_png_path,
+        args.pyseobnr_approximant,
+    )
 
     print(f"{args.pyseobnr_approximant} vs NRHybSur3dq8_CCE h20/h30 comparison")
     print(f"q = {args.q:g}")
     print(f"target x_start = {args.x_start:.12e}")
     print(f"target Omega = {omega_target:.12e}")
     print(f"NRHybSur3dq8_CCE t0 = {t_cce[0]:.3f} M, final time = {t_cce[-1]:.3f} M")
-    print(f"NRHybSur3dq8_CCE-fit Omega_start used for {args.pyseobnr_approximant} = {omega_pyseobnr_start:.12e}")
+    print(
+        f"NRHybSur3dq8_CCE initial Omega used for {args.pyseobnr_approximant} = "
+        f"{omega_pyseobnr_start:.12e}"
+    )
+    print(
+        f"{args.pyseobnr_approximant} initial Omega from h22 = "
+        f"{omega_pyseobnr_actual_start:.12e}"
+    )
     print(f"x0 = {x0:.12e}")
     print(f"x_eff = {x_eff:.12e}")
     print(f"nu = {nu:.12e}")
@@ -440,15 +581,24 @@ def main() -> int:
         print(f"{args.pyseobnr_approximant} curve held at final value for the last {pyseobnr_plateau_duration:.1f} M")
     print(f"{args.pyseobnr_approximant} oscillatory modes = {sorted(pyseobnr_modes)}")
     print(f"final NRHybSur3dq8_CCE Delta h20 = {_format_complex(dh20_cce[-1])}")
+    print(
+        "final NRHybSur3dq8_CCE perturbative Delta h20 = "
+        f"{_format_complex(dh20_cce_perturbative[-1])}"
+    )
     print(f"final {args.pyseobnr_approximant} Delta h20 = {_format_complex(dh20_pyseobnr[-1])}")
     print(f"final NRHybSur3dq8_CCE Delta h30 = {_format_complex(dh30_cce[-1])}")
     print(f"final {args.pyseobnr_approximant} Delta h30 = {_format_complex(dh30_pyseobnr[-1])}")
     print(f"final NRHybSur3dq8_CCE Delta h20 / nu = {_format_complex(dh20_cce_norm[-1])}")
+    print(
+        "final NRHybSur3dq8_CCE perturbative Delta h20 / nu = "
+        f"{_format_complex(dh20_cce_perturbative_norm[-1])}"
+    )
     print(f"final {args.pyseobnr_approximant} Delta h20 / nu = {_format_complex(dh20_pyseobnr_norm[-1])}")
     print(f"final NRHybSur3dq8_CCE Delta h30 / nu = {_format_complex(dh30_cce_norm[-1])}")
     print(f"final {args.pyseobnr_approximant} Delta h30 / nu = {_format_complex(dh30_pyseobnr_norm[-1])}")
     print(f"Saved CSV: {csv_path}")
     print(f"Saved plot: {png_path}")
+    print(f"Saved linear h20 plot: {linear_h20_png_path}")
     return 0
 
 

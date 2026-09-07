@@ -1,5 +1,3 @@
-"""Compute nonlinear-null memory from the E=1.01 axial Kerr-plunge waveform."""
-
 from __future__ import annotations
 
 import argparse
@@ -31,7 +29,6 @@ def _latex_scientific(value: float) -> str:
 
 
 def _read_total_axisymmetric_modes(path: Path) -> tuple[np.ndarray, dict[tuple[int, int], np.ndarray]]:
-    """Read the total ``h=h_regular+h_memory`` time-domain modes from CSV."""
 
     required_columns = {
         "spherical_l",
@@ -73,9 +70,7 @@ def _read_total_axisymmetric_modes(path: Path) -> tuple[np.ndarray, dict[tuple[i
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Compute displacement and spin memory components for an axial Kerr plunge."
-    )
+    parser = argparse.ArgumentParser()
     parser.add_argument("--input-csv", type=Path, required=True)
     parser.add_argument("--nu", type=float, default=1.0e-4)
     parser.add_argument("--lmax", type=int, default=7)
@@ -100,9 +95,6 @@ def main() -> int:
     if (2, 0) not in linear_modes or (3, 0) not in linear_modes:
         raise ValueError("the input CSV must include (2, 0) and (3, 0) modes")
 
-    # The CSV is normalized by nu M/R.  The quadratic results are normalized
-    # by nu**2 M/R and need one factor of nu before they are combined with the
-    # linear waveform in the plotted normalization.
     memory = compute_memory_modes(
         time,
         linear_modes,

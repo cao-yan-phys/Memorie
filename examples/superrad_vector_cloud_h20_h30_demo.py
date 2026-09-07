@@ -1,5 +1,3 @@
-"""Generate vector-cloud displacement and spin-memory modes with SuperRad."""
-
 from __future__ import annotations
 
 import argparse
@@ -38,7 +36,6 @@ def _endpoint_matched_quadrupolar_model(
     result: dict[str, object],
     h20: np.ndarray,
 ) -> np.ndarray:
-    """Return the endpoint-matched saturated-cloud quadrupolar h20 model."""
 
     time = np.asarray(result["t_dimensionless"], dtype=float)
     saturation_index = int(np.argmin(np.abs(np.asarray(result["t_seconds"], dtype=float))))
@@ -61,12 +58,6 @@ def _endpoint_matched_quadrupolar_h30_model(
     result: dict[str, object],
     h30: np.ndarray,
 ) -> np.ndarray:
-    """Return the endpoint-matched saturated-cloud quadrupolar h30 model.
-
-    For a quadrupolar primary waveform, ``h30`` is proportional to
-    ``i omega_gw A**2``.  The saturated-cloud amplitude therefore gives a
-    ``[1 + (t - t_sat)/tau_gw]**-2`` decay.
-    """
 
     time = np.asarray(result["t_dimensionless"], dtype=float)
     saturation_index = int(np.argmin(np.abs(np.asarray(result["t_seconds"], dtype=float))))
@@ -87,9 +78,7 @@ def _endpoint_matched_quadrupolar_h30_model(
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Generate SuperRad vector-cloud h20 and h30 memory waveforms."
-    )
+    parser = argparse.ArgumentParser()
     parser.add_argument("--black-hole-mass-msun", type=float, default=20.8)
     parser.add_argument("--black-hole-spin", type=float, default=0.7)
     parser.add_argument("--alpha", type=float, default=0.2)

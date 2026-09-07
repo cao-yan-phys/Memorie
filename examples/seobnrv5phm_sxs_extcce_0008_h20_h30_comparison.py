@@ -1,10 +1,3 @@
-"""Compare `SEOBNRv5PHM` modes plus perturbative memory with SXS h20/h30.
-
-The public Ext-CCE strain is fetched from the SXS Zenodo record on first use.
-The SXS target is its supplied h20/h30. The EOB total combines its supplied
-m=0 modes with perturbative memory from complete signed-m inertial-frame modes.
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -41,7 +34,6 @@ DEFAULT_ALIGNMENT_MAXITER = 32
 
 
 def _download(url: str, destination: Path) -> None:
-    """Download one immutable SXS artifact without replacing an existing file."""
 
     if destination.exists():
         return
@@ -102,7 +94,6 @@ def _normalized(vector: np.ndarray, name: str) -> np.ndarray:
 def _reference_eob_inputs(
     metadata: dict[str, object],
 ) -> tuple[float, np.ndarray, np.ndarray, float]:
-    """Express the SXS reference spins in the EOB source frame."""
 
     omega = np.asarray(metadata["reference_orbital_frequency"], dtype=float)
     separation = np.asarray(metadata["reference_position1"], dtype=float) - np.asarray(
@@ -170,7 +161,6 @@ def _extend_to_reference_end(
     values: np.ndarray,
     reference_end: float,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Restrict to the CCE interval and hold a shorter EOB waveform at its final value."""
 
     keep = time <= reference_end
     clipped_time = time[keep]
@@ -295,7 +285,6 @@ def _fit_rigid_alignment(
     max_time_shift: float,
     maxiter: int,
 ) -> tuple[float, np.ndarray, float, float]:
-    """Fit EOB elapsed time = SXS elapsed time + delta_t and a constant rotation."""
 
     try:
         from scipy.optimize import differential_evolution
@@ -557,13 +546,8 @@ def _format_complex(value: complex) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--omega-start",
-        type=float,
-        default=None,
-        help="override the SXS reference orbital frequency used to start SEOBNRv5PHM",
-    )
-    parser.add_argument("--eob-delta-t", type=float, default=1.0, help="SEOBNRv5PHM time step in units of M")
+    parser.add_argument("--omega-start", type=float, default=None)
+    parser.add_argument("--eob-delta-t", type=float, default=1.0)
     parser.add_argument("--eob-lmax", type=int, default=5)
     parser.add_argument("--memory-lmax", type=int, default=10)
     parser.add_argument("--match-time", type=float, default=DEFAULT_MATCH_TIME)

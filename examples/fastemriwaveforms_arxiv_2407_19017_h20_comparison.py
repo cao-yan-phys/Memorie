@@ -1,9 +1,3 @@
-"""Compare FastEMRIWaveforms h20 memory with arXiv:2407.19017, Fig. 3.
-
-The bundled reference CSV was digitized from the vector source of the main
-panel in https://arxiv.org/abs/2407.19017.
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -70,12 +64,7 @@ def _x_0pn_series(t_over_m: np.ndarray, x0: float, q: float) -> np.ndarray:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description=(
-            "Compare FastEMRIWaveforms perturbative h20 memory with the main panel "
-            "of arXiv:2407.19017, Fig. 3."
-        )
-    )
+    parser = argparse.ArgumentParser()
     parser.add_argument("--primary-mass-msun", type=float, default=1.0e6)
     parser.add_argument("--secondary-mass-msun", type=float, default=10.0)
     parser.add_argument("--spin", type=float, default=0.0)

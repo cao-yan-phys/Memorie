@@ -1,5 +1,3 @@
-"""Generate FEW EMRI perturbative h20/h30 memory waveforms."""
-
 from __future__ import annotations
 
 import argparse
@@ -75,7 +73,6 @@ def _eccentric_effective_0pn_deltas(
     q: float,
     e0: float,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Return exact-in-e Newtonian effective 0PN h20 and h30 increments."""
 
     t_arr = np.asarray(t, dtype=float)
     h20_arr = np.asarray(h20)

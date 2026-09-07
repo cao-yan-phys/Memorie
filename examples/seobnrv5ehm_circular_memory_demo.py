@@ -1,5 +1,3 @@
-"""Compute h20, h30, h40, and CM memory from a circular nonprecessing SEOBNRv5EHM event."""
-
 from __future__ import annotations
 
 import argparse
@@ -46,7 +44,6 @@ def _format_complex(value: complex) -> str:
 
 
 def _x_0pn_series(t: np.ndarray, x0: float, q: float) -> np.ndarray:
-    """Evolve ``x`` with ``dx/dt = (64 nu / 5) x^5`` from the first sample."""
 
     nu = symmetric_mass_ratio(q)
     denominator = float(x0) ** -4 - (256.0 / 5.0) * nu * (t - t[0])
@@ -70,7 +67,6 @@ def _cycle_max_envelope(
     values: np.ndarray,
     emm: int,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Return one maximum of ``values`` per azimuthal-mode cycle."""
 
     t = np.asarray(t, dtype=float)
     phase = np.unwrap(np.asarray(orbital_phase, dtype=float))
@@ -107,7 +103,6 @@ def _h31_0pn_from_h22(
     h22: np.ndarray,
     q: float,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Construct the missing leading-PN ``h_31`` from the model's ``h_22`` phase."""
 
     phase = -0.5 * np.unwrap(np.angle(-np.asarray(h22)))
     omega = np.gradient(phase, t, edge_order=2)
@@ -130,7 +125,7 @@ def main() -> int:
     parser.add_argument("--q", type=float, default=2.0)
     parser.add_argument("--omega-start", type=float, default=DEFAULT_OMEGA_START)
     parser.add_argument("--lmax", type=int, default=10)
-    parser.add_argument("--delta-t", type=float, default=20.0, help="output spacing in units of M")
+    parser.add_argument("--delta-t", type=float, default=20.0)
     parser.add_argument("--total-mass-solar", type=float, default=50.0)
     parser.add_argument("--output-dir", default=str(ROOT / "examples" / "output"))
     parser.add_argument("--plot-duration", type=float, default=1_250_000.0)
@@ -170,9 +165,6 @@ def main() -> int:
     h40 = primary[(4, 0)]["h_displacement"]
     dh40_dt = primary[(4, 0)]["dh_displacement_dt"]
 
-    # Match the LO-PN Bondi-frame convention before these displacement-memory
-    # modes are used as inputs to the CM source.  This is specific to this
-    # circular PN comparison; the public evaluator does not infer DC baselines.
     h20_cm_input = h20 - h20[0] + h20_lo(args.q, x_eff)
     h40_cm_input = h40 - h40[0] + h40_lo(args.q, x_eff)
     modes_with_h20 = dict(oscillatory_modes)

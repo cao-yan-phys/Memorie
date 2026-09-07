@@ -1,5 +1,3 @@
-"""FastEMRIWaveforms helpers for perturbative EMRI memory modes."""
-
 from __future__ import annotations
 
 from collections import defaultdict
@@ -20,7 +18,6 @@ MTSUN_SI = 4.925490947641266978197229498498379006e-6
 
 @dataclass(frozen=True)
 class FewEmriConfig:
-    """Configuration for an eccentric-equatorial FEW EMRI memory run."""
 
     primary_mass_msun: float = 1.0e6
     secondary_mass_msun: float = 50.0
@@ -69,14 +66,12 @@ def _mode_from_compressed_few_amplitudes(
     emm: int,
     enn: int,
 ) -> np.ndarray | None:
-    """Return one FEW amplitude, reconstructing a stored negative-m partner."""
 
     column = special_index_map.get((int(ell), int(emm), int(enn)))
     if column is None:
         return None
     value = np.asarray(amplitudes[:, column])
     if emm < 0:
-        # FEW maps (ell, -m, n) to the stored (ell, m, -n) column.
         value = parity_sign(ell) * np.conjugate(value)
     return value
 
@@ -124,7 +119,6 @@ def _compute_few_memory_sources(
     omega_phi: np.ndarray,
     omega_r: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
-    """Compute FEW orbit-averaged displacement and spin-memory sources."""
 
     amplitudes = _as_numpy(all_amplitudes)
     n_map = _build_n_map(special_index_map)
@@ -190,12 +184,6 @@ def compute_few_emri_memory_modes(
     config: FewEmriConfig | None = None,
     lmax: int = 10,
 ) -> dict[str, Any]:
-    """Generate FEW EMRI perturbative $h_{20}$ and $h_{30}$ memory modes.
-
-    The returned modes are distance-rescaled dimensionless amplitudes.  The
-    FEW amplitudes are converted with the same ``nu**2 * Mtot`` normalization
-    used in the internal FEW h20-grid generator.
-    """
 
     cfg = FewEmriConfig() if config is None else config
     if cfg.frequency_source not in {"geodesic", "phase-gradient"}:

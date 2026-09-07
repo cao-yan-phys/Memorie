@@ -10,6 +10,8 @@ Includes:
 
 The bundled angular-coupling table lives at `src/memorie/data/gamma_coeffs_lmax10.npz`. It stores the coefficients for the bilinear combinations of supplied strain modes and their time derivatives. The examples load this table automatically, so they do not regenerate the Wigner-3j coefficients at runtime. When the required coefficients are not present in the bundled table, the code generates them on the fly.
 
+Additionally, `particle_displacement_memory.py` evaluates $\Delta h_{l,m}$ from initial and final particle states of a scattering process.
+
 ## Install
 
 ```bash
@@ -28,7 +30,7 @@ The waveform models used by the examples are:
 
 ## Public Interface
 
-`compute_memory_modes` calculates nonlinear-null memory modes from a dictionary of strain modes:
+`compute_memory_modes` reconstructs nonlinear-null memory modes from a dictionary of strain modes:
 
 ```python
 from memorie import compute_memory_modes
@@ -55,7 +57,7 @@ The calculation uses the supplied strain modes in their given Bondi frame. If a 
 python examples/seobnrv5ehm_circular_memory_demo.py
 ```
 
-The example uses `SEOBNRv5EHM` to generate the oscillatory modes of a nonprecessing, quasicircular compact binary. It calculates $`h^{\mathrm{D}}_{2,0}`$, $`h^{\mathrm{S}}_{3,0}`$, $`h^{\mathrm{D}}_{4,0}`$, and the $`h^{\mathrm{CM}}_{l,m}`$ modes shown in the figure. An effective 0PN parameter $`x_{\mathrm{eff}}`$ is inferred from the initial value of $`\dot h^{\mathrm{D}}_{2,0}`$ and used in the 0PN comparisons.
+The example uses `SEOBNRv5EHM` to generate the oscillatory modes of a nonprecessing, quasicircular compact binary. It computes $`h^{\mathrm{D}}_{2,0}`$, $`h^{\mathrm{S}}_{3,0}`$, $`h^{\mathrm{D}}_{4,0}`$, and the $`h^{\mathrm{CM}}_{l,m}`$ modes shown in the figure. An effective 0PN parameter $`x_{\mathrm{eff}}`$ is inferred from the initial value of $`\dot h^{\mathrm{D}}_{2,0}`$ and used in the 0PN comparisons.
 
 The default initial PN parameter is $`x_0=0.015`$, implemented as `omega_start = 0.015**1.5`. Before calculating CM memory, the example sets $`h^{\mathrm{D}}_{2,0}(t_0)=h^{\mathrm{D},\mathrm{0PN}}_{2,0}(x_{\mathrm{eff}})`$ and $`h^{\mathrm{D}}_{4,0}(t_0)=h^{\mathrm{D},\mathrm{0PN}}_{4,0}(x_{\mathrm{eff}})`$, with $`h^{\mathrm{D},\mathrm{0PN}}_{2,0}(0)=h^{\mathrm{D},\mathrm{0PN}}_{4,0}(0)=0`$. The $`h^{\mathrm{D}}_{2,0}`$ and $`h^{\mathrm{D}}_{4,0}`$ panels show the real part of $`h^{\mathrm{D}}_{l,m}(t)-h^{\mathrm{D}}_{l,m}(t_0)`$, the $`h^{\mathrm{S}}_{3,0}`$ panel shows the imaginary part, and the CM memory panels show $`|h^{\mathrm{CM}}_{l,m}(t)-h^{\mathrm{CM}}_{l,m}(t_0)|_{\mathrm{envelope}}`$.
 
@@ -74,14 +76,19 @@ Example outputs:
 python examples/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_comparison.py
 ```
 
-At the `NRHybSur3dq8_CCE` time satisfying $`\Omega_{\mathrm{orb}}=0.015^{3/2}`$, this example determines the initial `SEOBNRv5EHM` frequency from the phase of the `NRHybSur3dq8_CCE` $`(2,2)`$ mode. It then compares the changes in the total `NRHybSur3dq8_CCE` modes, $`h_{2,0}(t)-h_{2,0}(t_0)`$ and $`h_{3,0}(t)-h_{3,0}(t_0)`$, with $`h^{\mathrm{D}}_{2,0}`$ and $`h^{\mathrm{S}}_{3,0}`$ calculated from the `SEOBNRv5EHM` oscillatory modes.
+At the `NRHybSur3dq8_CCE` time satisfying $`\Omega_{\mathrm{orb}}=0.015^{3/2}`$, this example determines the initial `SEOBNRv5EHM` frequency from the phase of the `NRHybSur3dq8_CCE` $`(2,2)`$ mode. It then compares the `NRHybSur3dq8_CCE` modes, $`h_{2,0}(t)-h_{2,0}(t_0)`$ and $`h_{3,0}(t)-h_{3,0}(t_0)`$, with $`h^{\mathrm{D}}_{2,0}`$ and $`h^{\mathrm{S}}_{3,0}`$ reconstructed from the `SEOBNRv5EHM` and `NRHybSur3dq8_CCE` oscillatory modes.
 
 Example outputs:
 
 - `examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015.csv`
 - `examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015.png`
+- `examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015_h20_linear.png`
 
 <p align="center"><img src="examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015.png?v=d200c1e26515" alt="SEOBNRv5EHM and NRHybSur3dq8_CCE memory-mode comparison" width="85%"></p>
+
+<p align="center"><img src="examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015_h20_linear.png" alt="SEOBNRv5EHM and NRHybSur3dq8_CCE linear h20 comparison" width="85%"></p>
+
+The final-Kerr particle contributions to the ordinary displacement memory in the $h_{2,0}$ and $h_{3,0}$ modes, evaluated with `NRSur3dq8Remnant` through `nrsur3dq8_remnant.py`, are $`\Delta h_{2,0}/(\nu M/R)\approx -2.21\times10^{-6}`$ and $\Delta h_{3,0}=0$, negligible on the scale of this comparison.
 
 ##  SEOBNRv5PHM Example
 
@@ -96,9 +103,9 @@ This example compares the `SEOBNRv5PHM` waveform (including null memory contribu
 python examples/fastemriwaveforms_emri_h20_h30_demo.py
 ```
 
-This example uses `FastEMRIWaveforms` to generate equatorial Kerr trajectories with initial eccentricities $`e_0=0`$ and $`e_0=0.8`$, mass ratio $`q=10^5`$, and spin $`\chi=0.8`$. It calculates $`h^{\mathrm{D}}_{2,0}`$ and $`h^{\mathrm{S}}_{3,0}`$ from the oscillatory modes and compares the results with effective 0PN predictions. The calculation retains only the nonoscillatory (“DC”) component of the memory waveform. With the default `frequency_source = "geodesic"`, the initial frequency parameter is defined by the azimuthal geodesic fundamental frequency: $`x_0=\left[M\Omega_\phi(t_0)\right]^{2/3}`$.
+This example uses `FastEMRIWaveforms` to generate equatorial Kerr trajectories with initial eccentricities $`e_0=0`$ and $`e_0=0.8`$, mass ratio $`q=10^5`$, and spin $`\chi=0.8`$. It reconstructs $`h^{\mathrm{D}}_{2,0}`$ and $`h^{\mathrm{S}}_{3,0}`$ from the oscillatory modes and compares the results with effective 0PN extrapolations. The calculation retains only the nonoscillatory (“DC”) component of the memory waveform. With the default `frequency_source = "geodesic"`, the initial frequency parameter is defined by the azimuthal geodesic fundamental frequency: $`x_0=\left[M\Omega_\phi(t_0)\right]^{2/3}`$.
 
-For an eccentric Newtonian binary, [Favata](https://arxiv.org/abs/1108.3121) gives $`\left\langle d h^{\mathrm{D},\mathrm{0PN}}_{2,0}/d(t/M)\right\rangle=\frac{256}{7}\sqrt{\frac{\pi}{30}}\frac{\nu^2 M}{R}\rho(e)^5(1-e^2)^{3/2}\left(1+\frac{145}{48}e^2+\frac{73}{192}e^4\right)`$, where $\rho(e)=M/p(e)$. The leading spin-memory mode is $`\left\langle h^{\mathrm{S},\mathrm{0PN}}_{3,0}(e)\right\rangle=i\frac{16\pi}{25}\sqrt{\frac{30}{7\pi}}\frac{\nu^2 M}{R}\rho(e)^{7/2}(1-e^2)^{3/2}\left(1+\frac{7}{8}e^2\right)`$. The effective 0PN prediction uses the semilatus rectum $p(e)$ following the [Peters](https://journals.aps.org/pr/abstract/10.1103/PhysRev.136.B1224) evolution from the effective initial value $\rho_{\mathrm{eff}}$ matched to the $h^{\mathrm{D}}_{2,0}$ DC slope.
+For an eccentric Newtonian binary, [Favata](https://arxiv.org/abs/1108.3121) gives $`\left\langle d h^{\mathrm{D},\mathrm{0PN}}_{2,0}/d(t/M)\right\rangle=\frac{256}{7}\sqrt{\frac{\pi}{30}}\frac{\nu^2 M}{R}\rho(e)^5(1-e^2)^{3/2}\left(1+\frac{145}{48}e^2+\frac{73}{192}e^4\right)`$, where $\rho(e)=M/p(e)$. The leading spin-memory mode is $`\left\langle h^{\mathrm{S},\mathrm{0PN}}_{3,0}(e)\right\rangle=i\frac{16\pi}{25}\sqrt{\frac{30}{7\pi}}\frac{\nu^2 M}{R}\rho(e)^{7/2}(1-e^2)^{3/2}\left(1+\frac{7}{8}e^2\right)`$. The effective 0PN extrapolation uses the semilatus rectum $p(e)$ following the [Peters](https://journals.aps.org/pr/abstract/10.1103/PhysRev.136.B1224) evolution from the effective initial value $\rho_{\mathrm{eff}}$ matched to the $h^{\mathrm{D}}_{2,0}$ DC slope.
 
 Example outputs:
 
@@ -117,7 +124,7 @@ The additional `fastemriwaveforms_arxiv_2407_19017_h20_comparison.py` example co
 python examples/superrad_vector_cloud_h20_h30_demo.py
 ```
 
-This example uses `SuperRad` to evolve a relativistic vector $`\lvert1011\rangle`$ cloud and calculates $`h^{\mathrm{D}}_{2,0}`$ and $`h^{\mathrm{S}}_{3,0}`$. The calculation retains only the nonoscillatory (“DC”) component of the memory waveform. The red dashed curves are quadrupolar approximations matched to the numerical values at $`t_{\mathrm{sat}}`$ and at the final time. For $`t\geq t_{\mathrm{sat}}`$, $`h^{\mathrm{D}}_{2,0}(t)-h^{\mathrm{D}}_{2,0}(t_{\mathrm{sat}})\propto1-[1+(t-t_{\mathrm{sat}})/\tau_{\mathrm{gw}}]^{-1}`$, while $`h^{\mathrm{S}}_{3,0}(t)-h^{\mathrm{S}}_{3,0}(t_{\mathrm{sat}})\propto1-[1+(t-t_{\mathrm{sat}})/\tau_{\mathrm{gw}}]^{-2}`$.
+This example uses `SuperRad` to evolve a relativistic vector $`\lvert1011\rangle`$ cloud and computes $`h^{\mathrm{D}}_{2,0}`$ and $`h^{\mathrm{S}}_{3,0}`$. The calculation retains only the nonoscillatory (“DC”) component of the memory waveform. The red dashed curves are quadrupolar approximations matched to the numerical values at $`t_{\mathrm{sat}}`$ and at the final time. For $`t\geq t_{\mathrm{sat}}`$, $`h^{\mathrm{D}}_{2,0}(t)-h^{\mathrm{D}}_{2,0}(t_{\mathrm{sat}})\propto1-[1+(t-t_{\mathrm{sat}})/\tau_{\mathrm{gw}}]^{-1}`$, while $`h^{\mathrm{S}}_{3,0}(t)-h^{\mathrm{S}}_{3,0}(t_{\mathrm{sat}})\propto1-[1+(t-t_{\mathrm{sat}})/\tau_{\mathrm{gw}}]^{-2}`$.
 
 Example outputs:
 
@@ -132,7 +139,7 @@ Example outputs:
 python examples/kerr_axial_plunge_e1p01_h20_h30_demo.py --input-csv INPUT.csv
 ```
 
-This example calculates the $`(2,0)`$ and $`(3,0)`$ memory modes from the $`(2\le l\le 7,m=0)`$ linear Teukolsky modes of a test body plunging along the north axis of a Kerr black hole. The linear modes are defined by $`h_{l,m}(t=-\infty)=0`$. The parameters are $`E=1.01`$, $`\chi=0.999`$, and $`\nu=10^{-4}`$. The figure shows $`\Delta h^{\mathrm{linear}}_{l,0}`$ in blue, $`10^5\Delta(h^{\mathrm{D}}_{l,0}+h^{\mathrm{S}}_{l,0})`$ in black, and $`10^5\Delta h^{\mathrm{D}}_{l,0}`$ as a red dashed curve.
+This example reconstructs the $`(2,0)`$ and $`(3,0)`$ null memory modes from the $`(2\le l\le 7,m=0)`$ linear Teukolsky modes of a test body plunging along the north axis of a Kerr black hole. The linear modes are defined by $`h_{l,m}(t=-\infty)=0`$. The parameters are $`E=1.01`$, $`\chi=0.999`$, and $`\nu=10^{-4}`$. The figure shows $`\Delta h^{\mathrm{linear}}_{l,0}`$ in blue, $`10^5\Delta(h^{\mathrm{D}}_{l,0}+h^{\mathrm{S}}_{l,0})`$ in black, and $`10^5\Delta h^{\mathrm{D}}_{l,0}`$ as a red dashed curve.
 
 Example outputs:
 

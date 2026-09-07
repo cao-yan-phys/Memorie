@@ -1,5 +1,3 @@
-"""Memorie: perturbative vacuum nonlinear-null gravitational-wave memory calculators."""
-
 from .core import (
     B_coefficient,
     C_coefficient,
@@ -17,6 +15,17 @@ from .core import (
     precompute_memory_coeffs,
 )
 from .few_emri import FewEmriConfig, compute_few_emri_memory_modes
+from .nrsur3dq8_remnant import (
+    NRSur3dq8RemnantState,
+    nrsur3dq8_particle_displacement_memory_mode,
+    nrsur3dq8_remnant_state,
+)
+from .particle_displacement import (
+    NullParticle,
+    TimelikeParticle,
+    particle_displacement_memory_mode,
+    outflow_speed_transfer,
+)
 from .qnm_ringdown import (
     KerrQNMExcitation,
     KerrRingdownConfig,
@@ -44,7 +53,10 @@ __all__ = [
     "FewEmriConfig",
     "KerrQNMExcitation",
     "KerrRingdownConfig",
+    "NRSur3dq8RemnantState",
+    "NullParticle",
     "SuperRadConfig",
+    "TimelikeParticle",
     "analytic_single_exponential_memory_modes",
     "cm_strain_lo_modes",
     "complete_nonprecessing_modes",
@@ -64,10 +76,14 @@ __all__ = [
     "h40_lo",
     "h30_spin_lo",
     "infer_x_eff_from_dh20",
+    "particle_displacement_memory_mode",
     "k20_lo",
     "k40_lo",
     "load_precomputed_memory_coeffs",
     "normalize_mode_dict",
+    "nrsur3dq8_particle_displacement_memory_mode",
+    "nrsur3dq8_remnant_state",
+    "outflow_speed_transfer",
     "parity_sign",
     "phase_from_h22_lo",
     "precompute_memory_coeffs",

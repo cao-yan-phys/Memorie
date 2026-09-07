@@ -1,5 +1,3 @@
-"""Kerr quasinormal-mode ringdown waveforms and memory-mode helpers."""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -19,12 +17,6 @@ from .core import (
 
 @dataclass(frozen=True)
 class KerrQNMExcitation:
-    """One explicitly excited gravitational Kerr QNM.
-
-    ``amplitude`` is the complex coefficient of the spin-weighted spheroidal
-    harmonic at ``start_time_M`` in the distance-rescaled strain convention.
-    The caller must supply every desired ordinary or mirror contribution.
-    """
 
     spheroidal_ell: int
     m: int
@@ -44,7 +36,6 @@ class KerrQNMExcitation:
 
 @dataclass(frozen=True)
 class KerrRingdownConfig:
-    """Dimensionless sampling configuration for a perturbation of a Kerr hole."""
 
     spin: float = 0.7
     start_time_M: float = 0.0
@@ -103,11 +94,6 @@ def generate_kerr_ringdown_modes(
     excitations: Iterable[KerrQNMExcitation],
     lmax: int = 10,
 ) -> dict[str, Any]:
-    """Generate spherical strain modes from explicitly excited Kerr QNMs.
-
-    The returned strain modes are ``H_lm=R*h_lm/M`` on a time grid in
-    ``t/M``.  No reflection or negative-``m`` completion is applied.
-    """
 
     if lmax < 2:
         raise ValueError("lmax must be at least 2")
@@ -160,7 +146,6 @@ def compute_kerr_ringdown_memory_modes(
     lmax: int = 10,
     include_cm: bool = True,
 ) -> dict[str, Any]:
-    """Generate Kerr-ringdown modes and compute their vacuum null memory."""
 
     result = generate_kerr_ringdown_modes(config, excitations, lmax=lmax)
     result["memory"] = compute_memory_modes(
@@ -181,12 +166,6 @@ def analytic_single_exponential_memory_modes(
     targets: Iterable[tuple[int, int]],
     lmax: int = 10,
 ) -> dict[tuple[int, int], dict[str, Any]]:
-    """Return exact displacement and spin memory for one shared QNM exponential.
-
-    Every input mode is assumed to equal ``B_lm*exp(-i*omega*(t-t0))``.
-    This is useful for validating the numerical memory integration used for a
-    single QNM after its spheroidal-to-spherical projection.
-    """
 
     time = validate_time_grid(t_dimensionless)
     omega = complex(omega_dimensionless)

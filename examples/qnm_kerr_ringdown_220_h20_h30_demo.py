@@ -1,5 +1,3 @@
-"""Compare numerical and analytic memory from one Kerr 220 QNM excitation."""
-
 from __future__ import annotations
 
 import argparse
@@ -38,9 +36,7 @@ def _delta(values: np.ndarray) -> np.ndarray:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Generate h20 and h30 memory from the fundamental Kerr 220 QNM."
-    )
+    parser = argparse.ArgumentParser()
     parser.add_argument("--spin", type=float, default=0.7)
     parser.add_argument("--amplitude", type=float, default=0.1)
     parser.add_argument("--start-time-M", type=float, default=0.0)
