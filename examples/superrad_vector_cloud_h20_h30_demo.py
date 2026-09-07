@@ -12,7 +12,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from memorie import (  # noqa: E402
+from memorie import (
     SuperRadConfig,
     compute_superrad_memory_modes,
 )

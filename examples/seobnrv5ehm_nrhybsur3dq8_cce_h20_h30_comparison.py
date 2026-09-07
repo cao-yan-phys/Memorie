@@ -16,7 +16,7 @@ MTSUN_SI = 4.925490947641266978197229498498379006e-6
 DEFAULT_X_START = 0.015
 DEFAULT_OMEGA_TARGET = DEFAULT_X_START**1.5
 
-from memorie import (  # noqa: E402
+from memorie import (
     complete_nonprecessing_modes,
     compute_memory_modes,
     differentiate_modes,
@@ -249,6 +249,42 @@ def _plot_linear_h20_comparison(
     inset.tick_params(labelsize=7)
     inset.grid(alpha=0.22, linewidth=0.5)
     mark_inset(axis, inset, loc1=1, loc2=4, fc="none", ec="0.35", linewidth=0.75)
+
+    cce_peak_time = float(cce_time[np.nanargmax(np.real(cce_h20))])
+    detail_start = max(inset_start, cce_peak_time - 18.0)
+    detail_end = min(end_time, cce_peak_time + 28.0)
+    cce_detail_mask = (cce_time >= detail_start) & (cce_time <= detail_end)
+    pyseobnr_detail_mask = (pyseobnr_time >= detail_start) & (pyseobnr_time <= detail_end)
+    detail = inset.inset_axes([0.07, 0.58, 0.35, 0.30])
+    detail.plot(cce_time[cce_detail_mask], np.real(cce_h20[cce_detail_mask]), color="black", linewidth=1.0)
+    detail.plot(
+        cce_time[cce_detail_mask],
+        np.real(cce_perturbative_h20[cce_detail_mask]),
+        color="blue",
+        linewidth=0.95,
+    )
+    detail.plot(
+        pyseobnr_time[pyseobnr_detail_mask],
+        np.real(pyseobnr_h20[pyseobnr_detail_mask]),
+        color="red",
+        linestyle="--",
+        linewidth=0.95,
+    )
+    detail.set_xlim(detail_start, detail_end)
+    detail_values = np.concatenate(
+        [
+            np.real(cce_h20[cce_detail_mask]),
+            np.real(cce_perturbative_h20[cce_detail_mask]),
+            np.real(pyseobnr_h20[pyseobnr_detail_mask]),
+        ]
+    )
+    detail_values = detail_values[np.isfinite(detail_values)]
+    detail_span = float(np.ptp(detail_values))
+    detail_padding = 0.08 * detail_span if detail_span else max(abs(float(detail_values[0])) * 0.08, 1e-16)
+    detail.set_ylim(float(np.min(detail_values)) - detail_padding, float(np.max(detail_values)) + detail_padding)
+    detail.tick_params(labelbottom=False, labelleft=False)
+    detail.grid(alpha=0.22, linewidth=0.4)
+    mark_inset(inset, detail, loc1=1, loc2=4, fc="none", ec="0.35", linewidth=0.55)
     figure.savefig(png_path, dpi=180)
     plt.close(figure)
 

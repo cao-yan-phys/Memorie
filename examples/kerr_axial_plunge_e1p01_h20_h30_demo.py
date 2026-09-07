@@ -13,7 +13,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from memorie import compute_memory_modes  # noqa: E402
+from memorie import compute_memory_modes
 
 
 def _token(value: float) -> str:

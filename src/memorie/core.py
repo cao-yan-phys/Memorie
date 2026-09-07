@@ -67,11 +67,71 @@ def validate_mode_lengths(t: np.ndarray, h: Mapping[Mode, np.ndarray]) -> None:
             raise ValueError(f"mode {mode} has length {len(series)}, but len(t)={len(t)}")
 
 
+def _piecewise_fourth_order_derivatives(t: np.ndarray, h: ModeDict) -> ModeDict:
+    steps = np.diff(t)
+    discontinuities = np.flatnonzero(
+        ~np.isclose(steps[1:], steps[:-1], rtol=1.0e-9, atol=1.0e-12)
+    ) + 1
+    boundaries = np.concatenate(([0], discontinuities, [len(t)]))
+    derivatives: ModeDict = {}
+    for mode, values in h.items():
+        derivative = np.gradient(values, t, edge_order=2)
+        for start, stop in zip(boundaries[:-1], boundaries[1:]):
+            segment_length = stop - start
+            if segment_length < 3:
+                continue
+            if segment_length < 5:
+                derivative[start:stop] = np.gradient(
+                    values[start:stop], t[start:stop], edge_order=2
+                )
+                continue
+            step = t[start + 1] - t[start]
+            segment = values[start:stop]
+            derivative[start] = (
+                -25.0 * segment[0]
+                + 48.0 * segment[1]
+                - 36.0 * segment[2]
+                + 16.0 * segment[3]
+                - 3.0 * segment[4]
+            ) / (12.0 * step)
+            derivative[start + 1] = (
+                -3.0 * segment[0]
+                - 10.0 * segment[1]
+                + 18.0 * segment[2]
+                - 6.0 * segment[3]
+                + segment[4]
+            ) / (12.0 * step)
+            derivative[start + 2 : stop - 2] = (
+                segment[:-4]
+                - 8.0 * segment[1:-3]
+                + 8.0 * segment[3:-1]
+                - segment[4:]
+            ) / (12.0 * step)
+            derivative[stop - 2] = (
+                3.0 * segment[-1]
+                + 10.0 * segment[-2]
+                - 18.0 * segment[-3]
+                + 6.0 * segment[-4]
+                - segment[-5]
+            ) / (12.0 * step)
+            derivative[stop - 1] = (
+                25.0 * segment[-1]
+                - 48.0 * segment[-2]
+                + 36.0 * segment[-3]
+                - 16.0 * segment[-4]
+                + 3.0 * segment[-5]
+            ) / (12.0 * step)
+        derivatives[mode] = derivative
+    return derivatives
+
+
 def differentiate_modes(t: Any, h: Mapping[Any, Any], edge_order: int = 2) -> ModeDict:
 
     t_arr = validate_time_grid(t)
     h_norm = normalize_mode_dict(h)
     validate_mode_lengths(t_arr, h_norm)
+    if edge_order == 2 and len(t_arr) >= 5:
+        return _piecewise_fourth_order_derivatives(t_arr, h_norm)
     actual_edge_order = 2 if edge_order == 2 and len(t_arr) >= 3 else 1
     return {
         mode: np.gradient(series, t_arr, edge_order=actual_edge_order)

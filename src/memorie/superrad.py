@@ -155,7 +155,7 @@ def compute_superrad_memory_modes(
 
     try:
         from superrad import ultralight_boson as ub
-    except ImportError as exc:  # pragma: no cover - depends on optional package
+    except ImportError as exc:
         raise ImportError("The SuperRad helper requires the optional 'superrad' package.") from exc
 
     boson = ub.UltralightBoson(spin=cfg.boson_spin, model=cfg.cloud_model)

@@ -44,7 +44,7 @@ def _load_few_objects() -> tuple[Any, Any]:
         from few.amplitude.ampinterp2d import AmpInterpKerrEccEq
         from few.trajectory.inspiral import EMRIInspiral
         from few.trajectory.ode.flux import KerrEccEqFlux
-    except ImportError as exc:  # pragma: no cover - depends on optional package
+    except ImportError as exc:
         raise ImportError(
             "The FEW EMRI helper requires FastEMRIWaveforms, imported as 'few'."
         ) from exc
@@ -191,7 +191,7 @@ def compute_few_emri_memory_modes(
 
     try:
         from few.utils.geodesic import get_fundamental_frequencies, get_separatrix
-    except ImportError as exc:  # pragma: no cover - depends on optional package
+    except ImportError as exc:
         raise ImportError(
             "The FEW EMRI helper requires FastEMRIWaveforms, imported as 'few'."
         ) from exc

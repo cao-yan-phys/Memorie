@@ -54,7 +54,7 @@ class KerrRingdownConfig:
 def _qnm_module() -> Any:
     try:
         import qnm
-    except ImportError as exc:  # pragma: no cover - depends on optional package
+    except ImportError as exc:
         raise ImportError("The Kerr-ringdown helper requires the optional 'qnm' package.") from exc
     return qnm
 

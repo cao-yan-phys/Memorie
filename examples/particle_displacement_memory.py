@@ -15,7 +15,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from memorie.particle_displacement import (  # noqa: E402
+from memorie.particle_displacement import (
     NullParticle,
     TimelikeParticle,
     particle_displacement_memory_mode,

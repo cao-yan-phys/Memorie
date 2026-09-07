@@ -16,7 +16,7 @@ MTSUN_SI = 4.925490947641266978197229498498379006e-6
 DEFAULT_X_START = 0.015
 DEFAULT_OMEGA_START = DEFAULT_X_START**1.5
 
-from memorie import (  # noqa: E402
+from memorie import (
     cm_strain_lo_modes,
     complete_nonprecessing_modes,
     compute_memory_modes,
@@ -125,7 +125,7 @@ def main() -> int:
     parser.add_argument("--q", type=float, default=2.0)
     parser.add_argument("--omega-start", type=float, default=DEFAULT_OMEGA_START)
     parser.add_argument("--lmax", type=int, default=10)
-    parser.add_argument("--delta-t", type=float, default=20.0)
+    parser.add_argument("--delta-t", type=float, default=5.0)
     parser.add_argument("--total-mass-solar", type=float, default=50.0)
     parser.add_argument("--output-dir", default=str(ROOT / "examples" / "output"))
     parser.add_argument("--plot-duration", type=float, default=1_250_000.0)
@@ -264,7 +264,7 @@ def main() -> int:
     output_dir.mkdir(parents=True, exist_ok=True)
     csv_path = output_dir / f"seobnrv5ehm_circular_memory_q{args.q:g}_omega{args.omega_start:g}.csv"
     with csv_path.open("w", newline="", encoding="utf-8") as stream:
-        writer = csv.writer(stream)
+        writer = csv.writer(stream, lineterminator="\n")
         writer.writerow(
             [
                 "quantity",

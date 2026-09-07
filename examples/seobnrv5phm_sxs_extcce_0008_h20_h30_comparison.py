@@ -15,7 +15,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from memorie import compute_memory_modes, differentiate_modes, symmetric_mass_ratio  # noqa: E402
+from memorie import compute_memory_modes, differentiate_modes, symmetric_mass_ratio
 
 
 MTSUN_SI = 4.925490947641266978197229498498379006e-6
@@ -28,8 +28,9 @@ SXS_FILES = {
     "metadata": "Lev5/metadata.json",
 }
 DEFAULT_MATCH_TIME = 500.0
+DEFAULT_OMEGA_START = 0.0139175
 DEFAULT_ALIGNMENT_WINDOW = (700.0, 2200.0)
-DEFAULT_ALIGNMENT_MAX_TIME_SHIFT = 200.0
+DEFAULT_ALIGNMENT_MAX_TIME_SHIFT = 300.0
 DEFAULT_ALIGNMENT_MAXITER = 32
 
 
@@ -183,6 +184,16 @@ def _interpolate_with_plateau(
     )
 
 
+def _interpolate_with_nan(
+    target_time: np.ndarray,
+    source_time: np.ndarray,
+    values: np.ndarray,
+) -> np.ndarray:
+    out = _interpolate_with_plateau(target_time, source_time, values)
+    out[(target_time < source_time[0]) | (target_time > source_time[-1])] = np.nan
+    return out
+
+
 def _start_index(time: np.ndarray, elapsed_time: float) -> int:
     index = int(np.searchsorted(time - time[0], elapsed_time, side="left"))
     if index >= len(time):
@@ -264,22 +275,11 @@ def _interpolate_complex(
     )
 
 
-def _interpolate_mode_matrix(
-    target_time: np.ndarray,
-    source_time: np.ndarray,
-    data: np.ndarray,
-) -> np.ndarray:
-    return np.column_stack(
-        [_interpolate_complex(target_time, source_time, values) for values in data.T]
-    )
-
-
-def _fit_rigid_alignment(
+def _fit_h22_alignment(
     t_sxs: np.ndarray,
     h_sxs: dict[tuple[int, int], np.ndarray],
     t_eob: np.ndarray,
     h_eob: dict[tuple[int, int], np.ndarray],
-    lmax: int,
     window_start: float,
     window_end: float,
     max_time_shift: float,
@@ -298,62 +298,45 @@ def _fit_rigid_alignment(
     if maxiter < 1:
         raise ValueError("alignment maxiter must be positive")
 
-    mode_order, sxs_data = _mode_matrix(h_sxs, lmax, SXS_ID)
-    eob_mode_order, eob_data = _mode_matrix(h_eob, lmax, "SEOBNRv5PHM")
-    if eob_mode_order != mode_order:
-        raise RuntimeError("inconsistent alignment mode ordering")
-
     sxs_elapsed = t_sxs - t_sxs[0]
     eob_elapsed = t_eob - t_eob[0]
-    grid = np.linspace(window_start, window_end, 401)
+    grid = np.linspace(window_start, window_end, 1601)
     if grid[-1] > sxs_elapsed[-1]:
         raise ValueError("the alignment window exceeds the SXS waveform")
-
-    fit_mask = (eob_elapsed >= window_start - max_time_shift) & (
-        eob_elapsed <= window_end + max_time_shift
-    )
-    if not np.any(fit_mask):
-        raise ValueError("the EOB waveform does not cover the alignment window")
-    fit_time = eob_elapsed[fit_mask]
-    if fit_time[0] > window_start - max_time_shift or fit_time[-1] < window_end + max_time_shift:
-        raise ValueError("the EOB waveform does not cover the allowed alignment time shifts")
-    fit_data = eob_data[fit_mask]
-    radiative_columns = np.array([mode[1] != 0 for mode in mode_order])
-    sxs_grid = _interpolate_mode_matrix(grid, sxs_elapsed, sxs_data[:, radiative_columns])
+    sxs_grid = _interpolate_complex(grid, sxs_elapsed, h_sxs[(2, 2)])
     normalization = float(np.vdot(sxs_grid, sxs_grid).real)
     if normalization == 0.0:
-        raise ValueError("the SXS alignment window has zero radiative norm")
+        raise ValueError("the SXS h22 alignment window has zero norm")
 
     def mismatch(parameters: np.ndarray) -> float:
-        delta_t, alpha, beta, gamma = parameters
+        delta_t = float(parameters[0])
         shifted_grid = grid + delta_t
-        if shifted_grid[0] < fit_time[0] or shifted_grid[-1] > fit_time[-1]:
+        if shifted_grid[0] < eob_elapsed[0] or shifted_grid[-1] > eob_elapsed[-1]:
             return 1.0e6
-        rotated = _rotate_mode_data(fit_time, fit_data, lmax, np.array([alpha, beta, gamma]))
-        eob_grid = _interpolate_mode_matrix(shifted_grid, fit_time, rotated[:, radiative_columns])
+        eob_grid = _interpolate_complex(shifted_grid, eob_elapsed, h_eob[(2, 2)])
+        phase = np.angle(np.vdot(eob_grid, sxs_grid))
+        eob_grid *= np.exp(1j * phase)
         residual = sxs_grid - eob_grid
         return float(np.vdot(residual, residual).real / normalization)
 
-    identity_mismatch = mismatch(np.zeros(4))
+    identity_mismatch = mismatch(np.zeros(1))
     result = differential_evolution(
         mismatch,
-        bounds=[
-            (-max_time_shift, max_time_shift),
-            (-np.pi, np.pi),
-            (0.0, np.pi),
-            (-np.pi, np.pi),
-        ],
+        bounds=[(-max_time_shift, max_time_shift)],
         popsize=8,
         maxiter=maxiter,
-        tol=5.0e-4,
+        tol=1.0e-8,
         polish=True,
         seed=20260903,
         updating="immediate",
         workers=1,
     )
     if result.fun >= identity_mismatch:
-        raise RuntimeError("rigid alignment did not improve the radiative-mode mismatch")
-    return float(result.x[0]), np.asarray(result.x[1:], dtype=float), identity_mismatch, float(result.fun)
+        raise RuntimeError("h22 alignment did not improve the mismatch")
+    delta_t = float(result.x[0])
+    eob_grid = _interpolate_complex(grid + delta_t, eob_elapsed, h_eob[(2, 2)])
+    phase = float(np.angle(np.vdot(eob_grid, sxs_grid)))
+    return delta_t, np.array([-0.5 * phase, 0.0, 0.0]), identity_mismatch, float(result.fun)
 
 
 def _aligned_eob_change(
@@ -377,6 +360,8 @@ def _aligned_eob_change(
 def _write_csv(
     path: Path,
     time: np.ndarray,
+    h22_sxs: np.ndarray,
+    h22_eob: np.ndarray,
     h20_sxs: np.ndarray,
     h20_eob_no_memory: np.ndarray,
     h20_eob: np.ndarray,
@@ -389,6 +374,10 @@ def _write_csv(
         writer.writerow(
             [
                 "t_minus_t0_M",
+                "SXS_BBH_ExtCCE_0008_h22_real_over_nu",
+                "SXS_BBH_ExtCCE_0008_h22_imag_over_nu",
+                "SEOBNRv5PHM_h22_real_over_nu",
+                "SEOBNRv5PHM_h22_imag_over_nu",
                 "SXS_BBH_ExtCCE_0008_delta_h20_real_over_nu",
                 "SXS_BBH_ExtCCE_0008_delta_h20_imag_over_nu",
                 "SEOBNRv5PHM_delta_h20_real_over_nu",
@@ -405,6 +394,8 @@ def _write_csv(
         )
         for row in zip(
             time,
+            h22_sxs,
+            h22_eob,
             h20_sxs,
             h20_eob_no_memory,
             h20_eob,
@@ -428,6 +419,10 @@ def _write_csv(
                     row[5].imag,
                     row[6].real,
                     row[6].imag,
+                    row[7].real,
+                    row[7].imag,
+                    row[8].real,
+                    row[8].imag,
                 ]
             )
 
@@ -435,6 +430,12 @@ def _write_csv(
 def _replot_from_csv(csv_path: Path, png_path: Path) -> None:
     data = np.genfromtxt(csv_path, delimiter=",", names=True)
     time = data["t_minus_t0_M"]
+    h22_sxs = data["SXS_BBH_ExtCCE_0008_h22_real_over_nu"] + 1j * data[
+        "SXS_BBH_ExtCCE_0008_h22_imag_over_nu"
+    ]
+    h22_eob = data["SEOBNRv5PHM_h22_real_over_nu"] + 1j * data[
+        "SEOBNRv5PHM_h22_imag_over_nu"
+    ]
     h20_sxs = data["SXS_BBH_ExtCCE_0008_delta_h20_real_over_nu"] + 1j * data[
         "SXS_BBH_ExtCCE_0008_delta_h20_imag_over_nu"
     ]
@@ -456,6 +457,8 @@ def _replot_from_csv(csv_path: Path, png_path: Path) -> None:
     _plot(
         png_path,
         time,
+        h22_sxs,
+        h22_eob,
         h20_sxs,
         h30_sxs,
         time,
@@ -469,6 +472,8 @@ def _replot_from_csv(csv_path: Path, png_path: Path) -> None:
 def _plot(
     path: Path,
     time_sxs: np.ndarray,
+    h22_sxs: np.ndarray,
+    h22_eob: np.ndarray,
     h20_sxs: np.ndarray,
     h30_sxs: np.ndarray,
     time_eob: np.ndarray,
@@ -479,8 +484,7 @@ def _plot(
 ) -> None:
     import matplotlib.pyplot as plt
 
-    cce_h20_label = r"$\mathtt{SXS\!:\!BBH\_ExtCCE\!:\!0008}$"
-    cce_h30_label = r"$\mathtt{SXS\!:\!BBH\_ExtCCE\!:\!0008}$"
+    cce_label = r"$\mathtt{SXS\!:\!BBH\_ExtCCE\!:\!0008}$"
     eob_no_memory_label = r"$\mathtt{SEOBNRv5PHM}$"
     eob_h20_label = r"$\mathtt{SEOBNRv5PHM}$ + perturbative null memory"
     eob_h30_label = r"$\mathtt{SEOBNRv5PHM}$ + perturbative null memory"
@@ -490,7 +494,7 @@ def _plot(
             h20_sxs.real,
             h20_eob_no_memory.real,
             h20_eob.real,
-            cce_h20_label,
+            cce_label,
             eob_h20_label,
         ),
         (
@@ -498,14 +502,26 @@ def _plot(
             h30_sxs.imag,
             h30_eob_no_memory.imag,
             h30_eob.imag,
-            cce_h30_label,
+            cce_label,
             eob_h30_label,
         ),
     )
 
-    figure, axes = plt.subplots(2, 1, figsize=(9, 6.6), sharex=True)
+    figure, axes = plt.subplots(3, 1, figsize=(9, 8.8), sharex=True)
+    axes[0].plot(time_sxs, h22_sxs.real, color="black", linewidth=1.25, label=cce_label)
+    axes[0].plot(
+        time_sxs,
+        h22_eob.real,
+        color="blue",
+        alpha=0.4,
+        linewidth=1.25,
+        label=eob_no_memory_label,
+    )
+    axes[0].set_ylabel(r"$\mathrm{Re}\,h_{2,2}/(\nu M/R)$")
+    axes[0].grid(alpha=0.25, linewidth=0.6)
+    axes[0].legend(loc="best", frameon=False)
     for axis, (ylabel, sxs_values, eob_no_memory_values, eob_values, cce_label, eob_label) in zip(
-        axes, panels, strict=True
+        axes[1:], panels, strict=True
     ):
         axis.plot(time_sxs, sxs_values, color="black", linewidth=1.25, label=cce_label)
         axis.plot(
@@ -528,14 +544,14 @@ def _plot(
         )
         axis.set_ylabel(ylabel)
         axis.grid(alpha=0.25, linewidth=0.6)
-    axes[0].legend(loc="best", frameon=False)
     axes[1].legend(loc="best", frameon=False)
-    axes[1].set_xlabel(r"$t-t_0$ [$M$]")
+    axes[2].legend(loc="best", frameon=False)
+    axes[2].set_xlabel(r"$t-t_0$ [$M$]")
     figure.suptitle(
         r"$\mathtt{SEOBNRv5PHM}$ vs $\mathtt{SXS\!:\!BBH\_ExtCCE\!:\!0008}$, $q=1$",
         y=0.99,
     )
-    figure.tight_layout(rect=(0.0, 0.0, 1.0, 0.96))
+    figure.tight_layout(rect=(0.0, 0.0, 1.0, 0.97))
     figure.savefig(path, dpi=180)
     plt.close(figure)
 
@@ -547,7 +563,7 @@ def _format_complex(value: complex) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--omega-start", type=float, default=None)
-    parser.add_argument("--eob-delta-t", type=float, default=1.0)
+    parser.add_argument("--eob-delta-t", type=float, default=0.25)
     parser.add_argument("--eob-lmax", type=int, default=5)
     parser.add_argument("--memory-lmax", type=int, default=10)
     parser.add_argument("--match-time", type=float, default=DEFAULT_MATCH_TIME)
@@ -577,8 +593,8 @@ def main() -> int:
         return 0
 
     t_sxs, h_sxs, metadata = _load_sxs_modes(args.cache_dir, args.eob_lmax)
-    q, chi1, chi2, metadata_omega_start = _reference_eob_inputs(metadata)
-    omega_start = args.omega_start if args.omega_start is not None else metadata_omega_start
+    q, chi1, chi2, _metadata_omega_start = _reference_eob_inputs(metadata)
+    omega_start = args.omega_start if args.omega_start is not None else DEFAULT_OMEGA_START
     t_eob, h_eob = _generate_seobnrv5phm_modes(
         q,
         chi1,
@@ -588,12 +604,11 @@ def main() -> int:
         args.total_mass_solar,
         args.eob_lmax,
     )
-    alignment_delta_t, alignment_euler, identity_mismatch, aligned_mismatch = _fit_rigid_alignment(
+    alignment_delta_t, alignment_euler, identity_mismatch, aligned_mismatch = _fit_h22_alignment(
         t_sxs,
         h_sxs,
         t_eob,
         h_eob,
-        args.eob_lmax,
         args.alignment_window_start,
         args.alignment_window_end,
         args.alignment_max_time_shift,
@@ -615,6 +630,7 @@ def main() -> int:
     sxs_reference_elapsed = sxs_elapsed[sxs_start]
     relative_sxs_time = t_sxs[sxs_start:] - t_sxs[sxs_start]
     nu = symmetric_mass_ratio(q)
+    h22_sxs = h_sxs[(2, 2)][sxs_start:] / nu
     delta_h20_sxs = (h_sxs[(2, 0)][sxs_start:] - h_sxs[(2, 0)][sxs_start]) / nu
     delta_h30_sxs = (h_sxs[(3, 0)][sxs_start:] - h_sxs[(3, 0)][sxs_start]) / nu
     relative_eob_time, delta_h20_eob_no_memory, eob_reference_elapsed = _aligned_eob_change(
@@ -657,6 +673,12 @@ def main() -> int:
     delta_h30_eob_no_memory /= nu
     delta_h20_eob = delta_h20_eob_no_memory + delta_h20_memory / nu
     delta_h30_eob = delta_h30_eob_no_memory + delta_h30_memory / nu
+    eob_reference_index = int(np.searchsorted(eob_elapsed, eob_reference_elapsed, side="left"))
+    h22_eob = _interpolate_with_nan(
+        relative_sxs_time,
+        relative_eob_time,
+        h_eob[(2, 2)][eob_reference_index:] / nu,
+    )
     plot_time_eob, plot_h20_eob = _extend_to_reference_end(
         relative_eob_time, delta_h20_eob, relative_sxs_time[-1]
     )
@@ -678,6 +700,8 @@ def main() -> int:
     _write_csv(
         csv_path,
         relative_sxs_time,
+        h22_sxs,
+        h22_eob,
         delta_h20_sxs,
         _interpolate_with_plateau(relative_sxs_time, relative_eob_time, delta_h20_eob_no_memory),
         _interpolate_with_plateau(relative_sxs_time, relative_eob_time, delta_h20_eob),
@@ -688,6 +712,8 @@ def main() -> int:
     _plot(
         png_path,
         relative_sxs_time,
+        h22_sxs,
+        h22_eob,
         delta_h20_sxs,
         delta_h30_sxs,
         plot_time_eob,
@@ -708,7 +734,7 @@ def main() -> int:
     )
     print(f"alignment delta_t = {alignment_delta_t:.6f} M")
     print(f"alignment Euler angles = {alignment_euler}")
-    print(f"alignment radiative mismatch = {identity_mismatch:.6e} -> {aligned_mismatch:.6e}")
+    print(f"alignment h22 mismatch = {identity_mismatch:.6e} -> {aligned_mismatch:.6e}")
     print(f"SXS comparison range = [{t_sxs[sxs_start]:.6f}, {t_sxs[-1]:.6f}] M")
     print(
         "SEOBNRv5PHM comparison range = "
