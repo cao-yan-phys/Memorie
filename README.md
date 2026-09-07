@@ -95,11 +95,11 @@ Example outputs:
 
 The final-Kerr particle contributions to the ordinary displacement memory in the $h_{2,0}$ and $h_{3,0}$ modes, evaluated with `NRSur3dq8Remnant` through `nrsur3dq8_remnant.py`, are $`\Delta h_{2,0}/(\nu M/R)\approx -2.21\times10^{-6}`$ and $\Delta h_{3,0}=0$, negligible on the scale of this comparison.
 
-The following Poincare fluxes are computed from the supplied strain modes:
+The following Poincaré fluxes are computed from the supplied strain modes:
 
-<p align="center"><img src="examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015_fluxes.png?v=dd6f50b1" alt="SEOBNRv5EHM and NRHybSur3dq8_CCE Poincare flux comparison" width="85%"></p>
+<p align="center"><img src="examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015_fluxes.png?v=dd6f50b1" alt="SEOBNRv5EHM and NRHybSur3dq8_CCE Poincaré flux comparison" width="85%"></p>
 
-Here $M_{\mathrm{f}}$ and $\mathbf{v}_{\mathrm{f}}$ are returned by `NRSur3dq8Remnant`, with $\gamma_{\mathrm{f}}=(1-|\mathbf{v}_{\mathrm{f}}|^2)^{-1/2}$.
+Here $`M_{\mathrm{f}}`$ and $`\mathbf{v}_{\mathrm{f}}`$ are returned by `NRSur3dq8Remnant`, with $`\gamma_{\mathrm{f}}=(1-|\mathbf{v}_{\mathrm{f}}|^2)^{-1/2}`$.
 
 ##  SEOBNRv5PHM Example
 

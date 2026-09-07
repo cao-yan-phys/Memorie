@@ -440,7 +440,7 @@ def main() -> int:
             ax.set_visible(False)
         for ax in flat_axes[-2:]:
             if ax.get_visible():
-                ax.set_xlabel(r"$t-t_0$ [$M$]")
+                ax.set_xlabel(r"$(t-t_0)/M$")
         flat_axes[0].legend(loc="best", frameon=False)
         flat_axes[3].legend(loc="best", frameon=False)
         fig.suptitle(f"SEOBNRv5EHM memory-mode waveform check, q={args.q:g}")

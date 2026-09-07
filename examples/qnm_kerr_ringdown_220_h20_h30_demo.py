@@ -232,8 +232,8 @@ def main() -> int:
             axis.set_ylabel(ylabel)
             axis.grid(alpha=0.22, linewidth=0.6)
             axis.legend(frameon=False)
-        axes[1, 0].set_xlabel(r"$t-t_0$ [$M$]")
-        axes[1, 1].set_xlabel(r"$t-t_0$ [$M$]")
+        axes[1, 0].set_xlabel(r"$(t-t_0)/M$")
+        axes[1, 1].set_xlabel(r"$(t-t_0)/M$")
         fig.suptitle(
             rf"$(l_{{\mathrm{{s}}}},m,n)=(2,2,0)$, "
             rf"$\chi={args.spin:g}$"

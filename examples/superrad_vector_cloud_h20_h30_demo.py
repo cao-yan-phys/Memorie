@@ -189,7 +189,7 @@ def main() -> int:
             linewidth=1.4,
             label=reference_label,
         )
-        axes[1].set_xlabel(r"$t-t_0$ [$M$]")
+        axes[1].set_xlabel(r"$(t-t_0)/M$")
         axes[1].set_ylabel(r"$\mathrm{Im}\,\Delta h^{\mathrm{S}}_{3,0}/(M/R)$")
         axes[1].grid(alpha=0.22, linewidth=0.6)
         axes[1].legend(loc="center", bbox_to_anchor=(0.40, 0.78), frameon=False)

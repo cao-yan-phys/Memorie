@@ -548,7 +548,7 @@ def _plot(
         axis.grid(alpha=0.25, linewidth=0.6)
     axes[1].legend(loc="best", frameon=False)
     axes[2].legend(loc="best", frameon=False)
-    axes[2].set_xlabel(r"$t-t_0$ [$M$]")
+    axes[2].set_xlabel(r"$(t-t_0)/M$")
     figure.suptitle(
         r"$\mathtt{SEOBNRv5PHM}$ vs $\mathtt{SXS\!:\!BBH\_ExtCCE\!:\!0008}$, $q=1$",
         y=0.99,

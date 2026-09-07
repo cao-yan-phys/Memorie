@@ -213,7 +213,7 @@ def _plot_linear_h20_comparison(
         label=rf"$\mathtt{{{pyseobnr_approximant}}}$ perturbative",
     )
     axis.set_ylabel(r"$\mathrm{Re}\,\Delta h_{2,0}/(\nu M/R)$")
-    axis.set_xlabel(r"$t-t_0$ [$M$]")
+    axis.set_xlabel(r"$(t-t_0)/M$")
     axis.grid(True, alpha=0.25)
     axis.legend(loc="best", frameon=False)
 
@@ -377,7 +377,7 @@ def _plot_flux_comparison(
         axis.set_ylabel(ylabel)
         axis.grid(True, alpha=0.25)
     axes[0].legend(loc="best", frameon=False)
-    axes[-1].set_xlabel(r"$t-t_0$ [$M$]")
+    axes[-1].set_xlabel(r"$(t-t_0)/M$")
     momentum_upper = max(
         float(np.nanmax(cce_fluxes["planar_momentum"])),
         float(np.nanmax(pyseobnr_fluxes["planar_momentum"])),
@@ -575,7 +575,7 @@ def main() -> int:
             )
         print(f"Redrew linear h20 comparison: {linear_h20_png_path}")
         if flux_csv_path.exists():
-            print(f"Redrew Poincare flux comparison: {flux_png_path}")
+            print(f"Redrew Poincaré flux comparison: {flux_png_path}")
         return 0
 
     try:
@@ -832,7 +832,7 @@ def main() -> int:
     axes[1].set_yscale("log")
     axes[1].set_ylim(*y30_lim)
     axes[1].set_ylabel(r"$\mathrm{Im}\,\Delta h_{3,0}/(\nu M/R)$")
-    axes[1].set_xlabel(r"$t-t_0$ [$M$]")
+    axes[1].set_xlabel(r"$(t-t_0)/M$")
     axes[1].grid(True, which="both", alpha=0.25)
     fig.suptitle(
         rf"$\mathtt{{{args.pyseobnr_approximant}}}$ vs $\mathtt{{NRHybSur3dq8\_CCE}}$, "
@@ -931,8 +931,8 @@ def main() -> int:
     print(f"Saved CSV: {csv_path}")
     print(f"Saved plot: {png_path}")
     print(f"Saved linear h20 plot: {linear_h20_png_path}")
-    print(f"Saved Poincare flux CSV: {flux_csv_path}")
-    print(f"Saved Poincare flux plot: {flux_png_path}")
+    print(f"Saved Poincaré flux CSV: {flux_csv_path}")
+    print(f"Saved Poincaré flux plot: {flux_png_path}")
     return 0
 
 
