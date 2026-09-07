@@ -4,6 +4,7 @@ Memorie is a perturbative calculator for vacuum nonlinear-null gravitational-wav
 
 Includes:
 
+- energy, linear-momentum, and angular-momentum flux evaluators;
 - displacement, spin, and CM memory evaluators;
 - leading-order PN helpers for nonprecessing quasicircular compact binaries;
 - a bundled `lmax=10` angular-coupling table for memory-mode calculations.
@@ -51,6 +52,8 @@ With the default `include_cm=True`, the result contains $`h^{\mathrm{D}}_{l,m}`$
 
 The calculation uses the supplied strain modes in their given Bondi frame. If a waveform model returns only positive-$`m`$ modes and the source is known to be nonprecessing and reflection symmetric, the missing partners may first be constructed with `complete_nonprecessing_modes`, which applies $`h_{l,-m}=(-1)^l h_{l,m}^{*}`$.
 
+Besides the nonlinear-null GW memory, Memorie can also compute the energy, linear-momentum, and angular-momentum fluxes from the supplied strain modes, together with their cumulative integrals. This is implemented in `compute_poincare_fluxes(t, h, hdot=None)`.
+
 ## SEOBNRv5EHM Example
 
 ```bash
@@ -83,12 +86,20 @@ Example outputs:
 - `examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015.csv`
 - `examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015.png`
 - `examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015_h20_linear.png`
+- `examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015_fluxes.csv`
+- `examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015_fluxes.png`
 
 <p align="center"><img src="examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015.png?v=d200c1e26515" alt="SEOBNRv5EHM and NRHybSur3dq8_CCE memory-mode comparison" width="85%"></p>
 
 <p align="center"><img src="examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015_h20_linear.png" alt="SEOBNRv5EHM and NRHybSur3dq8_CCE linear h20 comparison" width="85%"></p>
 
 The final-Kerr particle contributions to the ordinary displacement memory in the $h_{2,0}$ and $h_{3,0}$ modes, evaluated with `NRSur3dq8Remnant` through `nrsur3dq8_remnant.py`, are $`\Delta h_{2,0}/(\nu M/R)\approx -2.21\times10^{-6}`$ and $\Delta h_{3,0}=0$, negligible on the scale of this comparison.
+
+The following Poincare fluxes are computed from the supplied strain modes:
+
+<p align="center"><img src="examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015_fluxes.png?v=dd6f50b1" alt="SEOBNRv5EHM and NRHybSur3dq8_CCE Poincare flux comparison" width="85%"></p>
+
+Here $M_{\mathrm{f}}$ and $\mathbf{v}_{\mathrm{f}}$ are returned by `NRSur3dq8Remnant`, with $\gamma_{\mathrm{f}}=(1-|\mathbf{v}_{\mathrm{f}}|^2)^{-1/2}$.
 
 ##  SEOBNRv5PHM Example
 
@@ -103,7 +114,7 @@ This example compares the `SEOBNRv5PHM` waveform (including null memory contribu
 python examples/fastemriwaveforms_emri_h20_h30_demo.py
 ```
 
-This example uses `FastEMRIWaveforms` to generate equatorial Kerr trajectories with initial eccentricities $`e_0=0`$ and $`e_0=0.8`$, mass ratio $`q=10^5`$, and spin $`\chi=0.8`$. It reconstructs $`h^{\mathrm{D}}_{2,0}`$ and $`h^{\mathrm{S}}_{3,0}`$ from the oscillatory modes and compares the results with effective 0PN extrapolations. The calculation retains only the nonoscillatory (“DC”) component of the memory waveform. With the default `frequency_source = "geodesic"`, the initial frequency parameter is defined by the azimuthal geodesic fundamental frequency: $`x_0=\left[M\Omega_\phi(t_0)\right]^{2/3}`$.
+This example uses `FastEMRIWaveforms` to generate equatorial Kerr trajectories with initial eccentricities $`e_0=0`$ and $`e_0=0.8`$, mass ratio $`q=10^5`$, and spin $`\chi=0.8`$. It reconstructs $`h^{\mathrm{D}}_{2,0}`$ and $`h^{\mathrm{S}}_{3,0}`$ from the oscillatory modes and compares the results with effective 0PN extrapolations. The calculation retains only the nonoscillatory ("DC") component of the memory waveform. With the default `frequency_source = "geodesic"`, the initial frequency parameter is defined by the azimuthal geodesic fundamental frequency: $`x_0=\left[M\Omega_\phi(t_0)\right]^{2/3}`$.
 
 For an eccentric Newtonian binary, [Favata](https://arxiv.org/abs/1108.3121) gives $`\left\langle d h^{\mathrm{D},\mathrm{0PN}}_{2,0}/d(t/M)\right\rangle=\frac{256}{7}\sqrt{\frac{\pi}{30}}\frac{\nu^2 M}{R}\rho(e)^5(1-e^2)^{3/2}\left(1+\frac{145}{48}e^2+\frac{73}{192}e^4\right)`$, where $\rho(e)=M/p(e)$. The leading spin-memory mode is $`\left\langle h^{\mathrm{S},\mathrm{0PN}}_{3,0}(e)\right\rangle=i\frac{16\pi}{25}\sqrt{\frac{30}{7\pi}}\frac{\nu^2 M}{R}\rho(e)^{7/2}(1-e^2)^{3/2}\left(1+\frac{7}{8}e^2\right)`$. The effective 0PN extrapolation uses the semilatus rectum $p(e)$ following the [Peters](https://journals.aps.org/pr/abstract/10.1103/PhysRev.136.B1224) evolution from the effective initial value $\rho_{\mathrm{eff}}$ matched to the $h^{\mathrm{D}}_{2,0}$ DC slope.
 
@@ -124,7 +135,7 @@ The additional `fastemriwaveforms_arxiv_2407_19017_h20_comparison.py` example co
 python examples/superrad_vector_cloud_h20_h30_demo.py
 ```
 
-This example uses `SuperRad` to evolve a relativistic vector $`\lvert1011\rangle`$ cloud and computes $`h^{\mathrm{D}}_{2,0}`$ and $`h^{\mathrm{S}}_{3,0}`$. The calculation retains only the nonoscillatory (“DC”) component of the memory waveform. The red dashed curves are quadrupolar approximations matched to the numerical values at $`t_{\mathrm{sat}}`$ and at the final time. For $`t\geq t_{\mathrm{sat}}`$, $`h^{\mathrm{D}}_{2,0}(t)-h^{\mathrm{D}}_{2,0}(t_{\mathrm{sat}})\propto1-[1+(t-t_{\mathrm{sat}})/\tau_{\mathrm{gw}}]^{-1}`$, while $`h^{\mathrm{S}}_{3,0}(t)-h^{\mathrm{S}}_{3,0}(t_{\mathrm{sat}})\propto1-[1+(t-t_{\mathrm{sat}})/\tau_{\mathrm{gw}}]^{-2}`$.
+This example uses `SuperRad` to evolve a relativistic vector $`\lvert1011\rangle`$ cloud and computes $`h^{\mathrm{D}}_{2,0}`$ and $`h^{\mathrm{S}}_{3,0}`$. The calculation retains only the nonoscillatory ("DC") component of the memory waveform. The red dashed curves are quadrupolar approximations matched to the numerical values at $`t_{\mathrm{sat}}`$ and at the final time. For $`t\geq t_{\mathrm{sat}}`$, $`h^{\mathrm{D}}_{2,0}(t)-h^{\mathrm{D}}_{2,0}(t_{\mathrm{sat}})\propto1-[1+(t-t_{\mathrm{sat}})/\tau_{\mathrm{gw}}]^{-1}`$, while $`h^{\mathrm{S}}_{3,0}(t)-h^{\mathrm{S}}_{3,0}(t_{\mathrm{sat}})\propto1-[1+(t-t_{\mathrm{sat}})/\tau_{\mathrm{gw}}]^{-2}`$.
 
 Example outputs:
 

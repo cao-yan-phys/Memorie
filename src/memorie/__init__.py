@@ -15,12 +15,13 @@ from .core import (
     precompute_memory_coeffs,
 )
 from .few_emri import FewEmriConfig, compute_few_emri_memory_modes
+from .fluxes import compute_poincare_fluxes
 from .nrsur3dq8_remnant import (
     NRSur3dq8RemnantState,
     nrsur3dq8_particle_displacement_memory_mode,
     nrsur3dq8_remnant_state,
 )
-from .particle_displacement import (
+from .particle_displacement_memory import (
     NullParticle,
     TimelikeParticle,
     particle_displacement_memory_mode,
@@ -61,6 +62,7 @@ __all__ = [
     "cm_strain_lo_modes",
     "complete_nonprecessing_modes",
     "compute_memory_modes",
+    "compute_poincare_fluxes",
     "compute_vacuum_null_memory_mode",
     "compute_few_emri_memory_modes",
     "compute_kerr_ringdown_memory_modes",

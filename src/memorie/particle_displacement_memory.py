@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import argparse
+import json
 from collections.abc import Iterable
 from dataclasses import dataclass
 from math import factorial, pi, sqrt
+from pathlib import Path
 
 import numpy as np
 from scipy.special import hyp2f1
@@ -131,3 +134,62 @@ def particle_displacement_memory_mode(
     final_sum = sum((_mode_weight(ell, emm, particle) for particle in final), 0.0j)
     initial_sum = sum((_mode_weight(ell, emm, particle) for particle in initial), 0.0j)
     return complex(prefactor * (final_sum - initial_sum))
+
+
+def _load_state(path: Path | None) -> tuple[ParticleState, ...]:
+    if path is None:
+        return ()
+    try:
+        entries = json.loads(path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        raise ValueError(f"cannot read {path}: {exc}") from exc
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"invalid JSON in {path}: {exc}") from exc
+    if not isinstance(entries, list):
+        raise ValueError(f"{path} must contain a JSON array")
+    particles: list[ParticleState] = []
+    for index, entry in enumerate(entries):
+        if not isinstance(entry, dict):
+            raise ValueError(f"entry {index} in {path} must be a JSON object")
+        try:
+            if float(entry.get("speed", 1.0)) == 1.0:
+                particles.append(NullParticle(**entry))
+            else:
+                particles.append(TimelikeParticle(**entry))
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"invalid particle {index} in {path}: {exc}") from exc
+    return tuple(particles)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--ell", type=int)
+    parser.add_argument("--m", type=int)
+    parser.add_argument("--initial-state", type=Path)
+    parser.add_argument("--final-state", type=Path)
+    parser.add_argument("--distance", type=float, default=1.0)
+    parser.add_argument("--gravitational-constant", type=float, default=1.0)
+    args = parser.parse_args()
+
+    if args.ell is None or args.m is None:
+        parser.error("--ell and --m are required")
+    if args.initial_state is None and args.final_state is None:
+        parser.error("provide --initial-state, --final-state, or both")
+
+    try:
+        value = particle_displacement_memory_mode(
+            args.ell,
+            args.m,
+            initial_particles=_load_state(args.initial_state),
+            final_particles=_load_state(args.final_state),
+            distance=args.distance,
+            gravitational_constant=args.gravitational_constant,
+        )
+    except (TypeError, ValueError) as exc:
+        parser.error(str(exc))
+    print(f"Delta h_{{{args.ell},{args.m}}} = {value.real:.16e}{value.imag:+.16e}j")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -304,7 +304,8 @@ def _fit_h22_alignment(
     if grid[-1] > sxs_elapsed[-1]:
         raise ValueError("the alignment window exceeds the SXS waveform")
     sxs_grid = _interpolate_complex(grid, sxs_elapsed, h_sxs[(2, 2)])
-    normalization = float(np.vdot(sxs_grid, sxs_grid).real)
+    centered_sxs_grid = sxs_grid - np.mean(sxs_grid)
+    normalization = float(np.vdot(centered_sxs_grid, centered_sxs_grid).real)
     if normalization == 0.0:
         raise ValueError("the SXS h22 alignment window has zero norm")
 
@@ -314,9 +315,9 @@ def _fit_h22_alignment(
         if shifted_grid[0] < eob_elapsed[0] or shifted_grid[-1] > eob_elapsed[-1]:
             return 1.0e6
         eob_grid = _interpolate_complex(shifted_grid, eob_elapsed, h_eob[(2, 2)])
-        phase = np.angle(np.vdot(eob_grid, sxs_grid))
-        eob_grid *= np.exp(1j * phase)
-        residual = sxs_grid - eob_grid
+        centered_eob_grid = eob_grid - np.mean(eob_grid)
+        phase = np.angle(np.vdot(centered_eob_grid, centered_sxs_grid))
+        residual = centered_sxs_grid - centered_eob_grid * np.exp(1j * phase)
         return float(np.vdot(residual, residual).real / normalization)
 
     identity_mismatch = mismatch(np.zeros(1))
@@ -335,7 +336,8 @@ def _fit_h22_alignment(
         raise RuntimeError("h22 alignment did not improve the mismatch")
     delta_t = float(result.x[0])
     eob_grid = _interpolate_complex(grid + delta_t, eob_elapsed, h_eob[(2, 2)])
-    phase = float(np.angle(np.vdot(eob_grid, sxs_grid)))
+    centered_eob_grid = eob_grid - np.mean(eob_grid)
+    phase = float(np.angle(np.vdot(centered_eob_grid, centered_sxs_grid)))
     return delta_t, np.array([-0.5 * phase, 0.0, 0.0]), identity_mismatch, float(result.fun)
 
 
@@ -349,10 +351,10 @@ def _aligned_eob_change(
     if not elapsed_time[0] <= eob_reference_elapsed <= elapsed_time[-1]:
         raise ValueError("the aligned EOB reference time is outside the waveform")
     baseline = _interpolate_complex(eob_reference_elapsed, elapsed_time, values)
-    start = int(np.searchsorted(elapsed_time, eob_reference_elapsed, side="left"))
+    start = int(np.searchsorted(elapsed_time, eob_reference_elapsed, side="right"))
     return (
-        elapsed_time[start:] - eob_reference_elapsed,
-        values[start:] - baseline,
+        np.concatenate(([0.0], elapsed_time[start:] - eob_reference_elapsed)),
+        np.concatenate((np.zeros(1, dtype=complex), values[start:] - baseline)),
         eob_reference_elapsed,
     )
 
@@ -360,8 +362,8 @@ def _aligned_eob_change(
 def _write_csv(
     path: Path,
     time: np.ndarray,
-    h22_sxs: np.ndarray,
-    h22_eob: np.ndarray,
+    delta_h22_sxs: np.ndarray,
+    delta_h22_eob: np.ndarray,
     h20_sxs: np.ndarray,
     h20_eob_no_memory: np.ndarray,
     h20_eob: np.ndarray,
@@ -374,10 +376,10 @@ def _write_csv(
         writer.writerow(
             [
                 "t_minus_t0_M",
-                "SXS_BBH_ExtCCE_0008_h22_real_over_nu",
-                "SXS_BBH_ExtCCE_0008_h22_imag_over_nu",
-                "SEOBNRv5PHM_h22_real_over_nu",
-                "SEOBNRv5PHM_h22_imag_over_nu",
+                "SXS_BBH_ExtCCE_0008_delta_h22_real_over_nu",
+                "SXS_BBH_ExtCCE_0008_delta_h22_imag_over_nu",
+                "SEOBNRv5PHM_delta_h22_real_over_nu",
+                "SEOBNRv5PHM_delta_h22_imag_over_nu",
                 "SXS_BBH_ExtCCE_0008_delta_h20_real_over_nu",
                 "SXS_BBH_ExtCCE_0008_delta_h20_imag_over_nu",
                 "SEOBNRv5PHM_delta_h20_real_over_nu",
@@ -394,8 +396,8 @@ def _write_csv(
         )
         for row in zip(
             time,
-            h22_sxs,
-            h22_eob,
+            delta_h22_sxs,
+            delta_h22_eob,
             h20_sxs,
             h20_eob_no_memory,
             h20_eob,
@@ -430,11 +432,11 @@ def _write_csv(
 def _replot_from_csv(csv_path: Path, png_path: Path) -> None:
     data = np.genfromtxt(csv_path, delimiter=",", names=True)
     time = data["t_minus_t0_M"]
-    h22_sxs = data["SXS_BBH_ExtCCE_0008_h22_real_over_nu"] + 1j * data[
-        "SXS_BBH_ExtCCE_0008_h22_imag_over_nu"
+    delta_h22_sxs = data["SXS_BBH_ExtCCE_0008_delta_h22_real_over_nu"] + 1j * data[
+        "SXS_BBH_ExtCCE_0008_delta_h22_imag_over_nu"
     ]
-    h22_eob = data["SEOBNRv5PHM_h22_real_over_nu"] + 1j * data[
-        "SEOBNRv5PHM_h22_imag_over_nu"
+    delta_h22_eob = data["SEOBNRv5PHM_delta_h22_real_over_nu"] + 1j * data[
+        "SEOBNRv5PHM_delta_h22_imag_over_nu"
     ]
     h20_sxs = data["SXS_BBH_ExtCCE_0008_delta_h20_real_over_nu"] + 1j * data[
         "SXS_BBH_ExtCCE_0008_delta_h20_imag_over_nu"
@@ -457,8 +459,8 @@ def _replot_from_csv(csv_path: Path, png_path: Path) -> None:
     _plot(
         png_path,
         time,
-        h22_sxs,
-        h22_eob,
+        delta_h22_sxs,
+        delta_h22_eob,
         h20_sxs,
         h30_sxs,
         time,
@@ -472,8 +474,8 @@ def _replot_from_csv(csv_path: Path, png_path: Path) -> None:
 def _plot(
     path: Path,
     time_sxs: np.ndarray,
-    h22_sxs: np.ndarray,
-    h22_eob: np.ndarray,
+    delta_h22_sxs: np.ndarray,
+    delta_h22_eob: np.ndarray,
     h20_sxs: np.ndarray,
     h30_sxs: np.ndarray,
     time_eob: np.ndarray,
@@ -508,16 +510,16 @@ def _plot(
     )
 
     figure, axes = plt.subplots(3, 1, figsize=(9, 8.8), sharex=True)
-    axes[0].plot(time_sxs, h22_sxs.real, color="black", linewidth=1.25, label=cce_label)
+    axes[0].plot(time_sxs, delta_h22_sxs.real, color="black", linewidth=1.25, label=cce_label)
     axes[0].plot(
         time_sxs,
-        h22_eob.real,
+        delta_h22_eob.real,
         color="blue",
         alpha=0.4,
         linewidth=1.25,
         label=eob_no_memory_label,
     )
-    axes[0].set_ylabel(r"$\mathrm{Re}\,h_{2,2}/(\nu M/R)$")
+    axes[0].set_ylabel(r"$\mathrm{Re}\,\Delta h_{2,2}/(\nu M/R)$")
     axes[0].grid(alpha=0.25, linewidth=0.6)
     axes[0].legend(loc="best", frameon=False)
     for axis, (ylabel, sxs_values, eob_no_memory_values, eob_values, cce_label, eob_label) in zip(
@@ -630,7 +632,10 @@ def main() -> int:
     sxs_reference_elapsed = sxs_elapsed[sxs_start]
     relative_sxs_time = t_sxs[sxs_start:] - t_sxs[sxs_start]
     nu = symmetric_mass_ratio(q)
-    h22_sxs = h_sxs[(2, 2)][sxs_start:] / nu
+    delta_h22_sxs = (h_sxs[(2, 2)][sxs_start:] - h_sxs[(2, 2)][sxs_start]) / nu
+    _relative_eob_time_h22, delta_h22_eob, _eob_reference_elapsed_h22 = _aligned_eob_change(
+        eob_elapsed, h_eob[(2, 2)], sxs_reference_elapsed, alignment_delta_t
+    )
     delta_h20_sxs = (h_sxs[(2, 0)][sxs_start:] - h_sxs[(2, 0)][sxs_start]) / nu
     delta_h30_sxs = (h_sxs[(3, 0)][sxs_start:] - h_sxs[(3, 0)][sxs_start]) / nu
     relative_eob_time, delta_h20_eob_no_memory, eob_reference_elapsed = _aligned_eob_change(
@@ -657,6 +662,7 @@ def main() -> int:
         np.array_equal(relative_eob_time, time)
         for time in (
             _relative_eob_time_h30,
+            _relative_eob_time_h22,
             _relative_eob_time_h20_memory,
             _relative_eob_time_h30_memory,
         )
@@ -664,6 +670,7 @@ def main() -> int:
         eob_reference_elapsed,
         (
             _eob_reference_elapsed_h30,
+            _eob_reference_elapsed_h22,
             _eob_reference_elapsed_h20_memory,
             _eob_reference_elapsed_h30_memory,
         ),
@@ -673,11 +680,10 @@ def main() -> int:
     delta_h30_eob_no_memory /= nu
     delta_h20_eob = delta_h20_eob_no_memory + delta_h20_memory / nu
     delta_h30_eob = delta_h30_eob_no_memory + delta_h30_memory / nu
-    eob_reference_index = int(np.searchsorted(eob_elapsed, eob_reference_elapsed, side="left"))
     h22_eob = _interpolate_with_nan(
         relative_sxs_time,
         relative_eob_time,
-        h_eob[(2, 2)][eob_reference_index:] / nu,
+        delta_h22_eob / nu,
     )
     plot_time_eob, plot_h20_eob = _extend_to_reference_end(
         relative_eob_time, delta_h20_eob, relative_sxs_time[-1]
@@ -700,7 +706,7 @@ def main() -> int:
     _write_csv(
         csv_path,
         relative_sxs_time,
-        h22_sxs,
+        delta_h22_sxs,
         h22_eob,
         delta_h20_sxs,
         _interpolate_with_plateau(relative_sxs_time, relative_eob_time, delta_h20_eob_no_memory),
@@ -712,7 +718,7 @@ def main() -> int:
     _plot(
         png_path,
         relative_sxs_time,
-        h22_sxs,
+        delta_h22_sxs,
         h22_eob,
         delta_h20_sxs,
         delta_h30_sxs,

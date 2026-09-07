@@ -6,7 +6,7 @@ from typing import Any
 
 import numpy as np
 
-from .particle_displacement import TimelikeParticle, particle_displacement_memory_mode
+from .particle_displacement_memory import TimelikeParticle, particle_displacement_memory_mode
 
 
 @dataclass(frozen=True)

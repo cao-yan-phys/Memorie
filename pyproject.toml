@@ -22,6 +22,9 @@ superrad = ["superrad", "matplotlib"]
 qnm = ["qnm", "matplotlib"]
 surfinbh = ["surfinBH"]
 
+[project.scripts]
+particle_displacement_memory = "memorie.particle_displacement_memory:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
