@@ -129,6 +129,8 @@ The additional `fastemriwaveforms_arxiv_2407_19017_h20_comparison.py` example co
 
 <p align="center"><img src="examples/output/fastemriwaveforms_arxiv_2407_19017_h20_comparison_q100000_chi0.png" alt="FastEMRIWaveforms and arXiv:2407.19017 memory-mode comparison" width="85%"></p>
 
+<p align="center"><img src="examples/output/fastemriwaveforms_arxiv_2407_19017_h20_comparison_q100000_chi0_h2_minus2_h20.png" alt="FastEMRIWaveforms (2,-2) mode and (2,0) null displacement memory" width="85%"></p>
+
 ## SuperRad Example
 
 ```bash

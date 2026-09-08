@@ -180,6 +180,31 @@ def _compute_few_memory_sources(
     return displacement_source, spin_mode, diagnostics
 
 
+def _reconstruct_few_mode(
+    *,
+    all_amplitudes: Any,
+    special_index_map: dict[tuple[int, int, int], int],
+    ell: int,
+    emm: int,
+    phi_phi: np.ndarray,
+    phi_r: np.ndarray,
+) -> np.ndarray:
+
+    amplitudes = _as_numpy(all_amplitudes)
+    mode = np.zeros(amplitudes.shape[0], dtype=complex)
+    for enn in _build_n_map(special_index_map).get((int(ell), int(emm)), []):
+        amplitude = _mode_from_compressed_few_amplitudes(
+            amplitudes,
+            special_index_map,
+            ell,
+            emm,
+            enn,
+        )
+        if amplitude is not None:
+            mode += amplitude * np.exp(-1j * (int(emm) * phi_phi + int(enn) * phi_r))
+    return mode
+
+
 def compute_few_emri_memory_modes(
     config: FewEmriConfig | None = None,
     lmax: int = 10,
@@ -240,6 +265,14 @@ def compute_few_emri_memory_modes(
     crossing = np.where(p < cfg.endpoint_factor * p_sep)[0]
     endpoint_index = int(crossing[0]) if len(crossing) else int(len(p) - 1)
     endpoint_index = min(max(endpoint_index, 2), len(p) - 1)
+    h2_minus2 = _reconstruct_few_mode(
+        all_amplitudes=all_amplitudes,
+        special_index_map=amp.special_index_map,
+        ell=2,
+        emm=-2,
+        phi_phi=np.asarray(phi_phi, dtype=float),
+        phi_r=np.asarray(phi_r, dtype=float),
+    )
 
     coeffs_20 = precompute_memory_coeffs(2, 0, l1_max=lmax, l2_max=lmax)
     coeffs_30 = precompute_memory_coeffs(3, 0, l1_max=lmax, l2_max=lmax)
@@ -294,7 +327,10 @@ def compute_few_emri_memory_modes(
         "total_mass_seconds": total_mass_seconds,
         "primary_mass_seconds": primary_mass_seconds,
         "t_dense_dimensionless": t_dense_dimensionless,
+        "t_trajectory_dimensionless": t[:endpoint_index] / total_mass_seconds,
+        "phi_phi_trajectory": np.asarray(phi_phi[:endpoint_index], dtype=float),
         "h20_dimensionless": h20_dimensionless,
+        "h2_minus2_dimensionless": nu * h2_minus2[:endpoint_index],
         "h30_dimensionless": h30_dimensionless,
         "delta_h20_dimensionless": complex(h20_dimensionless[-1] - h20_dimensionless[0]),
         "delta_h30_dimensionless": complex(h30_dimensionless[-1] - h30_dimensionless[0]),
