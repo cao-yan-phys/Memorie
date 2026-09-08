@@ -33,9 +33,9 @@ def _read_total_axisymmetric_modes(path: Path) -> tuple[np.ndarray, dict[tuple[i
     required_columns = {
         "spherical_l",
         "m",
-        "time",
-        "re_h",
-        "im_h",
+        "u_over_M",
+        "re_h_over_nuM_over_R",
+        "im_h_over_nuM_over_R",
     }
     grouped: dict[tuple[int, int], list[dict[str, str]]] = defaultdict(list)
     with path.open(newline="", encoding="utf-8") as stream:
@@ -53,17 +53,21 @@ def _read_total_axisymmetric_modes(path: Path) -> tuple[np.ndarray, dict[tuple[i
         raise ValueError("the axial-plunge example requires only m=0 input modes")
 
     first_mode = min(grouped)
-    time = np.asarray([float(row["time"]) for row in grouped[first_mode]], dtype=float)
+    time = np.asarray([float(row["u_over_M"]) for row in grouped[first_mode]], dtype=float)
     if len(time) < 3 or np.any(np.diff(time) <= 0.0):
         raise ValueError("the input time grid must be strictly increasing with at least three samples")
 
     modes: dict[tuple[int, int], np.ndarray] = {}
     for mode, rows in sorted(grouped.items()):
-        mode_time = np.asarray([float(row["time"]) for row in rows], dtype=float)
+        mode_time = np.asarray([float(row["u_over_M"]) for row in rows], dtype=float)
         if not np.allclose(mode_time, time, rtol=0.0, atol=1.0e-12):
             raise ValueError(f"time grid for mode {mode} differs from the first mode")
         modes[mode] = np.asarray(
-            [float(row["re_h"]) + 1j * float(row["im_h"]) for row in rows],
+            [
+                float(row["re_h_over_nuM_over_R"])
+                + 1j * float(row["im_h_over_nuM_over_R"])
+                for row in rows
+            ],
             dtype=complex,
         )
     return time, modes
