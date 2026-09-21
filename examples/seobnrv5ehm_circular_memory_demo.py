@@ -219,9 +219,6 @@ def main() -> int:
     phase0 = phase_from_h22_lo(oscillatory_modes[(2, 2)][0])
     cm_lo_full = cm_strain_lo_modes(args.q, x_eff, phase0)
 
-    h30_num = primary[(3, 0)]["h_spin_mode"][0]
-    h30_lo = h30_spin_lo(args.q, x_eff)
-
     print("SEOBNRv5EHM circular nonprecessing memory demo")
     print(f"q = {args.q:g}, omega_start = {args.omega_start:g}")
     print(f"samples = {len(t)}, time range = [{t[0]:.3f}, {t[-1]:.3f}] M")
@@ -232,13 +229,6 @@ def main() -> int:
     print(f"x_eff = {x_eff:.12e}")
     print(f"h20_CM_input(t0) = {h20_cm_input[0].real:.12e}")
     print(f"h40_CM_input(t0) = {h40_cm_input[0].real:.12e}")
-    print()
-    print("Initial spin-memory h30")
-    print("mode        numeric                 LO PN                 rel.err")
-    print(
-        f"h30   {_format_complex(h30_num):>24}  {_format_complex(h30_lo):>24}"
-        f"  {_relative_error(h30_num, h30_lo):.3e}"
-    )
     print()
     print("Initial CM strain modes")
     print("mode        full + 0PN (3,1)        truncated + 0PN         corrected LO PN")
@@ -276,19 +266,6 @@ def main() -> int:
                 "lo_full_imag",
                 "relerr_supplemented",
                 "relerr_truncated",
-            ]
-        )
-        writer.writerow(
-            [
-                "h30",
-                h30_num.real,
-                h30_num.imag,
-                h30_num.real,
-                h30_num.imag,
-                h30_lo.real,
-                h30_lo.imag,
-                _relative_error(h30_num, h30_lo),
-                _relative_error(h30_num, h30_lo),
             ]
         )
         for row in rows:

@@ -52,7 +52,7 @@ With the default `include_cm=True`, the result contains $`h^{\mathrm{D}}_{l,m}`$
 
 The calculation uses the supplied strain modes in their given Bondi frame. If a waveform model returns only positive-$`m`$ modes and the source is known to be nonprecessing and reflection symmetric, the missing partners may first be constructed with `complete_nonprecessing_modes`, which applies $`h_{l,-m}=(-1)^l h_{l,m}^{*}`$.
 
-Besides the nonlinear-null GW memory, Memorie can also compute the energy, linear-momentum, and angular-momentum fluxes from the supplied strain modes, together with their cumulative integrals. This is implemented in `compute_poincare_fluxes(t, h, hdot=None)`.
+Besides the nonlinear-null GW memory, Memorie can also compute the energy, linear-momentum, and angular-momentum fluxes from the supplied strain modes, together with their cumulative integrals. These are implemented in `compute_poincare_fluxes(t, h, hdot=None)`.
 
 ## SEOBNRv5EHM Example
 
