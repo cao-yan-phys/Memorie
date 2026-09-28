@@ -287,6 +287,8 @@ def main() -> int:
     if not args.no_plot:
         import matplotlib.pyplot as plt
 
+        plt.rcParams["axes.formatter.use_mathtext"] = True
+
         x_0pn = _x_0pn_series(t, x_eff, args.q)
         phase_0pn = phase0 + cumulative_integral(t, x_0pn**1.5)
         indices = _plot_indices(t, args.plot_duration)
@@ -334,6 +336,18 @@ def main() -> int:
                 np.real(h40_0pn - h40_0pn[0]) / nu,
             ),
         ]
+        plot_data: dict[str, np.ndarray] = {
+            "q": np.asarray([args.q]),
+            "omega_start": np.asarray([args.omega_start]),
+            "x_eff": np.asarray([x_eff]),
+            "time_M": t_plot,
+            "h20_numeric": np.real(h20[indices] - h20[0]) / nu,
+            "h20_0pn": np.real(h20_0pn - h20_0pn[0]) / nu,
+            "h30_numeric": np.imag(primary[(3, 0)]["h_spin_mode"][indices] - primary[(3, 0)]["h_spin_mode"][0]) / nu,
+            "h30_0pn": np.imag(h30_0pn - h30_0pn[0]) / nu,
+            "h40_numeric": np.real(h40[indices] - h40[0]) / nu,
+            "h40_0pn": np.real(h40_0pn - h40_0pn[0]) / nu,
+        }
         for target in cm_targets:
             supplemented = np.abs(
                 with_supplemented_modes[target]["h_cm_mode"][indices]
@@ -373,6 +387,16 @@ def main() -> int:
                     effective_envelope,
                 )
             )
+            key = f"cm_{target[0]}_{target[1]}"
+            plot_data[f"{key}_full_time_M"] = supplemented_t
+            plot_data[f"{key}_full_envelope"] = supplemented_envelope
+            plot_data[f"{key}_truncated_time_M"] = truncated_t
+            plot_data[f"{key}_truncated_envelope"] = truncated_envelope
+            plot_data[f"{key}_0pn_time_M"] = effective_t
+            plot_data[f"{key}_0pn_envelope"] = effective_envelope
+
+        plot_data_path = output_dir / f"seobnrv5ehm_circular_memory_q{args.q:g}_omega{args.omega_start:g}_plot_data.npz"
+        np.savez_compressed(plot_data_path, **plot_data)
 
         fig, axes = plt.subplots(5, 2, figsize=(11, 12.5), sharex=True, constrained_layout=True)
         flat_axes = axes.ravel()
@@ -425,6 +449,7 @@ def main() -> int:
         fig.savefig(png_path, dpi=180)
         plt.close(fig)
         print(f"Saved comparison plot: {png_path}")
+        print(f"Saved plot data: {plot_data_path}")
     return 0
 
 

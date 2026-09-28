@@ -71,7 +71,7 @@ Example outputs:
 - `examples/output/seobnrv5ehm_circular_memory_q2_omega0.00183712.csv`
 - `examples/output/seobnrv5ehm_circular_memory_q2_omega0.00183712.png`
 
-<p align="center"><img src="examples/output/seobnrv5ehm_circular_memory_q2_omega0.00183712.png?v=fbd223c76d52" alt="SEOBNRv5EHM memory modes" width="85%"></p>
+<p align="center"><img src="examples/output/seobnrv5ehm_circular_memory_q2_omega0.00183712.png?v=fbd223c76d52"  width="85%"></p>
 
 ## SEOBNRv5EHM and NRHybSur3dq8_CCE Comparison
 
@@ -89,23 +89,23 @@ Example outputs:
 - `examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015_fluxes.csv`
 - `examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015_fluxes.png`
 
-<p align="center"><img src="examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015.png?v=d200c1e26515" alt="SEOBNRv5EHM and NRHybSur3dq8_CCE memory-mode comparison" width="85%"></p>
+<p align="center"><img src="examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015.png?v=d200c1e26515"  width="85%"></p>
 
-<p align="center"><img src="examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015_h20_linear.png" alt="SEOBNRv5EHM and NRHybSur3dq8_CCE linear h20 comparison" width="85%"></p>
+<p align="center"><img src="examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015_h20_linear.png" width="85%"></p>
 
 The final-Kerr particle contributions to the ordinary displacement memory in the $h_{2,0}$ and $h_{3,0}$ modes, evaluated with `NRSur3dq8Remnant` through `nrsur3dq8_remnant.py`, are $`\Delta h_{2,0}/(\nu M/R)\approx -2.21\times10^{-6}`$ and $\Delta h_{3,0}=0$, negligible on the scale of this comparison.
 
-The following Poincaré fluxes are computed from the supplied strain modes:
+The following Poincaré fluxes are integrated from $t_0$ , using the supplied strain modes:
 
-<p align="center"><img src="examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015_fluxes.png?v=dd6f50b1" alt="SEOBNRv5EHM and NRHybSur3dq8_CCE Poincaré flux comparison" width="85%"></p>
+<p align="center"><img src="examples/output/seobnrv5ehm_nrhybsur3dq8_cce_h20_h30_q2_x0.015_fluxes.png?v=04ebfedd2e5c" width="85%"></p>
 
-Here $`M_{\mathrm{f}}`$ and $`\mathbf{v}_{\mathrm{f}}`$ are returned by `NRSur3dq8Remnant`, with $`\gamma_{\mathrm{f}}=(1-|\mathbf{v}_{\mathrm{f}}|^2)^{-1/2}`$.
+Here $`M_{\mathrm{f}}`$ is returned by `NRSur3dq8Remnant` and $`\mathbf{v}_{\mathrm{f}}`$ by `NRSur3dq8BMSRemnant`, with $`\gamma_{\mathrm{f}}=(1-|\mathbf{v}_{\mathrm{f}}|^2)^{-1/2}`$.
 
 ##  SEOBNRv5PHM Example
 
 This example compares the `SEOBNRv5PHM` waveform (including null memory contribution computed perturbatively) with the [SXS:BBH_ExtCCE:0008](https://data.black-holes.org/waveforms/extcce_catalog.html) Ext-CCE waveform.
 
-<p align="center"><img src="examples/output/seobnrv5phm_sxs_bbh_extcce_0008_h20_h30_q1.png" alt="SEOBNRv5PHM and SXS:BBH_ExtCCE:0008 memory-mode comparison" width="85%"></p>
+<p align="center"><img src="examples/output/seobnrv5phm_sxs_bbh_extcce_0008_h20_h30_q1.png" width="85%"></p>
 
 
 ## FastEMRIWaveforms Examples
@@ -123,13 +123,13 @@ Example outputs:
 - `examples/output/fastemriwaveforms_emri_h20_h30_q100000_p0_100_chi0p8.csv`
 - `examples/output/fastemriwaveforms_emri_h20_h30_q100000_p0_100_chi0p8.png`
 
-<p align="center"><img src="examples/output/fastemriwaveforms_emri_h20_h30_q100000_p0_100_chi0p8.png" alt="FastEMRIWaveforms memory modes" width="85%"></p>
+<p align="center"><img src="examples/output/fastemriwaveforms_emri_h20_h30_q100000_p0_100_chi0p8.png" width="85%"></p>
 
 The additional `fastemriwaveforms_arxiv_2407_19017_h20_comparison.py` example compares $`h^{\mathrm{D}}_{2,0}`$ calculated from `FastEMRIWaveforms` (with effective 0PN extrapolation), with the result reported in [arXiv:2407.19017](https://arxiv.org/abs/2407.19017).
 
-<p align="center"><img src="examples/output/fastemriwaveforms_arxiv_2407_19017_h20_comparison_q100000_chi0.png" alt="FastEMRIWaveforms and arXiv:2407.19017 memory-mode comparison" width="85%"></p>
+<p align="center"><img src="examples/output/fastemriwaveforms_arxiv_2407_19017_h20_comparison_q100000_chi0.png" width="85%"></p>
 
-<p align="center"><img src="examples/output/fastemriwaveforms_arxiv_2407_19017_h20_comparison_q100000_chi0_h2_minus2_h20.png" alt="FastEMRIWaveforms (2,-2) mode and (2,0) null displacement memory" width="85%"></p>
+<p align="center"><img src="examples/output/fastemriwaveforms_arxiv_2407_19017_h20_comparison_q100000_chi0_h2_minus2_h20.png" width="85%"></p>
 
 ## SuperRad Example
 
@@ -144,7 +144,7 @@ Example outputs:
 - `examples/output/superrad_vector_1011_h20_h30_alpha0p2_chi0p7.csv`
 - `examples/output/superrad_vector_1011_h20_h30_alpha0p2_chi0p7.png`
 
-<p align="center"><img src="examples/output/superrad_vector_1011_h20_h30_alpha0p2_chi0p7.png" alt="SuperRad vector 1011 memory modes" width="85%"></p>
+<p align="center"><img src="examples/output/superrad_vector_1011_h20_h30_alpha0p2_chi0p7.png" width="85%"></p>
 
 ## Kerr Axial-Plunge Example
 
@@ -159,7 +159,7 @@ Example outputs:
 - `examples/output/kerr_axial_plunge_e1p01_h20_h30_nu1em04.csv`
 - `examples/output/kerr_axial_plunge_e1p01_h20_h30_nu1em04.png`
 
-<p align="center"><img src="examples/output/kerr_axial_plunge_e1p01_h20_h30_nu1em04.png" alt="Kerr axial-plunge memory modes" width="85%"></p>
+<p align="center"><img src="examples/output/kerr_axial_plunge_e1p01_h20_h30_nu1em04.png" width="85%"></p>
 
 ## qnm Ringdown Example
 
@@ -174,7 +174,7 @@ Example outputs:
 - `examples/output/qnm_kerr_ringdown_220_h20_h30_chi0p7.csv`
 - `examples/output/qnm_kerr_ringdown_220_h20_h30_chi0p7.png`
 
-<p align="center"><img src="examples/output/qnm_kerr_ringdown_220_h20_h30_chi0p7.png?v=fec4d76d8a84" alt="qnm 220 ringdown memory modes" width="85%"></p>
+<p align="center"><img src="examples/output/qnm_kerr_ringdown_220_h20_h30_chi0p7.png?v=fec4d76d8a84" width="85%"></p>
 
 ## The Persistence of Displacement Memory
 
@@ -241,7 +241,7 @@ $$
 
 Recall that $`\mathcal{A}_l(1)=1`$.
 
-<p align="center">  <img src="forgetting_curve.jpg" alt="forgetting curve" width="50%"></p><p align="center"><sub>The forgetting curve</sub></p>
+<p align="center">  <img src="forgetting_curve.jpg" width="50%"></p><p align="center"><sub>The forgetting curve</sub></p>
 
 At finite radius, the early-time growth of $h_{l,m}$ is also suppressed relative to its null-infinity counterpart. As a concrete example, consider a quasi-circular binary. At leading PN order,
 

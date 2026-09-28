@@ -122,6 +122,7 @@ def main() -> int:
     )
     csv_path = args.output_dir / f"{stem}.csv"
     png_path = args.output_dir / f"{stem}.png"
+    plot_data_path = args.output_dir / f"{stem}_plot_data.npz"
     with csv_path.open("w", newline="", encoding="utf-8") as stream:
         writer = csv.writer(stream, lineterminator="\n")
         writer.writerow(
@@ -143,11 +144,25 @@ def main() -> int:
                 strict=True,
             )
         )
+    np.savez_compressed(
+        plot_data_path,
+        elapsed_M=elapsed,
+        h20= np.real(delta_h20),
+        h20_reference=h20_reference,
+        h30=np.imag(delta_h30),
+        h30_reference=h30_reference,
+        saturation_elapsed_M=np.asarray([elapsed[saturation_index]]),
+        inset_half_width_M=np.asarray([8.0 * efold_time]),
+        alpha=np.asarray([args.alpha]),
+        black_hole_spin=np.asarray([args.black_hole_spin]),
+        beta0=np.asarray([beta0]),
+    )
 
     if not args.no_plot:
         import matplotlib
 
         matplotlib.use("Agg")
+        matplotlib.rcParams["axes.formatter.use_mathtext"] = True
         import matplotlib.pyplot as plt
         from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 
@@ -283,6 +298,7 @@ def main() -> int:
     print(f"final Im(Delta h30)/(M/R)={np.imag(delta_h30[-1]):.12e}")
     print(f"max_power_relative_error={result['max_power_relative_error']:.6%}")
     print(f"wrote {csv_path}")
+    print(f"wrote {plot_data_path}")
     if not args.no_plot:
         print(f"wrote {png_path}")
     return 0

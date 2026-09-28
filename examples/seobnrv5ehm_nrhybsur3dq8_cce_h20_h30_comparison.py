@@ -20,9 +20,9 @@ from memorie import (
     complete_nonprecessing_modes,
     compute_memory_modes,
     compute_poincare_fluxes,
+    cumulative_integral,
     differentiate_modes,
     infer_x_eff_from_dh20,
-    nrsur3dq8_remnant_state,
     symmetric_mass_ratio,
 )
 
@@ -135,6 +135,16 @@ def _endpoint_refined_indices(
     return np.unique(np.concatenate([head, tail]))
 
 
+def _flux_csv_indices(t: np.ndarray, max_points: int) -> np.ndarray:
+    if len(t) <= max_points:
+        return np.arange(len(t), dtype=int)
+    early_end = int(np.searchsorted(t, t[0] + 50000.0, side="right"))
+    early_budget = min(early_end, max_points // 2)
+    early = np.linspace(0, early_end - 1, early_budget, dtype=int) if early_budget else np.array([], dtype=int)
+    remainder = _endpoint_refined_indices(t, max_points - early_budget)
+    return np.unique(np.concatenate([early, remainder]))
+
+
 def _include_extrema(indices: np.ndarray, *series: np.ndarray) -> np.ndarray:
     critical = [0, len(series[0]) - 1]
     for values in series:
@@ -186,6 +196,8 @@ def _plot_linear_h20_comparison(
     pyseobnr_approximant: str,
 ) -> None:
     import matplotlib.pyplot as plt
+
+    plt.rcParams["axes.formatter.use_mathtext"] = True
     from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 
     figure, axis = plt.subplots(figsize=(9, 3.7), constrained_layout=True)
@@ -254,10 +266,11 @@ def _plot_linear_h20_comparison(
 
     cce_peak_time = float(cce_time[np.nanargmax(np.real(cce_h20))])
     detail_start = max(inset_start, cce_peak_time - 18.0)
-    detail_end = min(end_time, cce_peak_time + 28.0)
+    previous_detail_end = min(end_time, cce_peak_time + 28.0)
+    detail_end = min(end_time, detail_start + 2.0 * (previous_detail_end - detail_start))
     cce_detail_mask = (cce_time >= detail_start) & (cce_time <= detail_end)
     pyseobnr_detail_mask = (pyseobnr_time >= detail_start) & (pyseobnr_time <= detail_end)
-    detail = inset.inset_axes([0.07, 0.58, 0.35, 0.30])
+    detail = inset.inset_axes([0.07, 0.15, 0.35, 0.80])
     detail.plot(cce_time[cce_detail_mask], np.real(cce_h20[cce_detail_mask]), color="black", linewidth=1.0)
     detail.plot(
         cce_time[cce_detail_mask],
@@ -328,37 +341,133 @@ def _final_kerr_momentum(final_kerr_mass: float, final_kerr_velocity: np.ndarray
     return float(final_kerr_mass * speed / np.sqrt(1.0 - speed**2))
 
 
+def _pn_bms_remnant(q: float) -> tuple[float, np.ndarray, float]:
+    import surfinBH
+
+    chi = np.zeros(3)
+    ordinary = surfinBH.LoadFits("NRSur3dq8Remnant")
+    mass, _spin, _velocity, _mass_error, _spin_error, _velocity_error = ordinary.all(q, chi, chi)
+    bms = surfinBH.LoadFits("NRSur3dq8BMSRemnant")
+    _alpha, boost, _alpha_error, _boost_error = bms.all(q, chi, chi)
+    boost = np.asarray(boost, dtype=float)
+    momentum = _final_kerr_momentum(float(mass), boost)
+    return float(mass), boost, momentum
+
+
+def _bms_aligned_planar_momentum(
+    time: np.ndarray,
+    modes: dict[tuple[int, int], np.ndarray],
+    momentum: np.ndarray,
+) -> tuple[np.ndarray, float]:
+    if (2, 1) not in modes:
+        raise ValueError("the PN-BMS phase alignment requires the supplied (2, 1) mode")
+    amplitude = np.zeros_like(time, dtype=float)
+    for values in modes.values():
+        amplitude += np.abs(values) ** 2
+    peak_time = float(time[np.argmax(amplitude)])
+    reference_time = peak_time - 100.0
+    if reference_time < time[0] or reference_time > time[-1]:
+        raise ValueError("the PN-BMS phase reference lies outside the waveform")
+    h21_phase = np.unwrap(np.angle(-np.asarray(modes[(2, 1)])))
+    rotation = -float(np.interp(reference_time, time, h21_phase)) + 0.5 * np.pi
+    planar = np.asarray(momentum[:, 0], dtype=float) + 1j * np.asarray(momentum[:, 1], dtype=float)
+    aligned = planar * np.exp(-1j * rotation)
+    return np.column_stack((aligned.real, aligned.imag)), reference_time
+
+
+def _effective_0pn_fluxes(
+    time: np.ndarray,
+    q: float,
+    fluxes: dict[str, np.ndarray],
+    x_momentum_phase: float,
+) -> dict[str, np.ndarray | float]:
+    nu = symmetric_mass_ratio(q)
+    delta = (float(q) - 1.0) / (float(q) + 1.0)
+    energy_flux0 = float(fluxes["energy_flux"][0])
+    jz_flux0 = float(fluxes["angular_momentum_flux"][0, 2])
+    pflux0 = np.asarray(fluxes["linear_momentum_flux"][0, :2], dtype=float)
+    pflux0_complex = complex(pflux0[0], pflux0[1])
+    pflux0_magnitude = abs(pflux0_complex)
+    energy_coefficient = (32.0 / 5.0) * nu**2
+    momentum_coefficient = (464.0 / 105.0) * nu**2 * delta
+    if energy_flux0 <= 0.0 or jz_flux0 <= 0.0 or pflux0_magnitude <= 0.0 or momentum_coefficient <= 0.0:
+        raise ValueError("effective 0PN flux matching requires positive initial fluxes")
+
+    x_energy = (energy_flux0 / energy_coefficient) ** 0.2
+    x_jz = (jz_flux0 / energy_coefficient) ** (2.0 / 7.0)
+    x_momentum = (pflux0_magnitude / momentum_coefficient) ** (2.0 / 11.0)
+
+    def x_series(x_initial: float) -> np.ndarray:
+        denominator = 1.0 - (256.0 / 5.0) * nu * x_initial**4 * time
+        values = np.full_like(time, np.nan, dtype=float)
+        valid = denominator > 0.0
+        values[valid] = x_initial * denominator[valid] ** (-0.25)
+        values[values > 0.3] = np.nan
+        return values
+
+    x_energy_series = x_series(x_energy)
+    x_jz_series = x_series(x_jz)
+    x_momentum_series = x_series(x_momentum_phase)
+    energy_radiated = 0.5 * nu * (x_energy_series - x_energy)
+    angular_momentum_radiated = nu * (x_jz ** (-0.5) - x_jz_series ** (-0.5))
+    phase = (x_momentum_phase ** (-2.5) - x_momentum_series ** (-2.5)) / (32.0 * nu)
+    momentum_flux = (
+        pflux0_complex
+        * (x_momentum_series / x_momentum_phase) ** 5.5
+        * np.exp(1j * phase)
+    )
+    momentum = np.full_like(momentum_flux, np.nan, dtype=complex)
+    momentum_valid = np.isfinite(momentum_flux)
+    momentum[momentum_valid] = cumulative_integral(time[momentum_valid], momentum_flux[momentum_valid])
+    return {
+        "energy_radiated": energy_radiated,
+        "angular_momentum_radiated": angular_momentum_radiated,
+        "planar_momentum": np.abs(momentum),
+        "x_energy": x_energy,
+        "x_jz": x_jz,
+        "x_momentum": x_momentum,
+        "x_momentum_phase": x_momentum_phase,
+        "prehistory_energy": 0.5 * nu * x_energy,
+        "prehistory_planar_momentum": pflux0_magnitude / x_momentum_phase**1.5,
+    }
+
+
 def _plot_flux_comparison(
     cce_time: np.ndarray,
     cce_fluxes: dict[str, np.ndarray],
     pyseobnr_time: np.ndarray,
     pyseobnr_fluxes: dict[str, np.ndarray],
+    effective_0pn_fluxes: dict[str, np.ndarray | float],
     png_path: Path,
     pyseobnr_approximant: str,
-    final_kerr_momentum: float,
+    bms_remnant_momentum: float,
 ) -> None:
     import matplotlib.pyplot as plt
+    from matplotlib.ticker import ScalarFormatter
     from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 
     series = [
         (
             cce_fluxes["energy_radiated"],
             pyseobnr_fluxes["energy_radiated"],
+            np.asarray(effective_0pn_fluxes["energy_radiated"], dtype=float),
             r"$\Delta E^{\mathrm{gw}}/M$",
         ),
         (
             cce_fluxes["angular_momentum_radiated"][:, 2],
             pyseobnr_fluxes["angular_momentum_radiated"][:, 2],
+            np.asarray(effective_0pn_fluxes["angular_momentum_radiated"], dtype=float),
             r"$\Delta J_z^{\mathrm{gw}}/M^2$",
         ),
         (
             cce_fluxes["planar_momentum"],
             pyseobnr_fluxes["planar_momentum"],
+            np.asarray(effective_0pn_fluxes["planar_momentum"], dtype=float),
             r"$|\Delta\mathbf{P}^{\mathrm{gw}}|/M$",
         ),
     ]
     figure, axes = plt.subplots(3, 1, figsize=(9, 8), sharex=True, constrained_layout=True)
-    for axis, (cce_values, pyseobnr_values, ylabel) in zip(axes, series, strict=True):
+    for axis, (cce_values, pyseobnr_values, effective_values, ylabel) in zip(axes, series, strict=True):
         axis.plot(
             cce_time,
             cce_values,
@@ -369,10 +478,22 @@ def _plot_flux_comparison(
         axis.plot(
             pyseobnr_time,
             pyseobnr_values,
-            color="red",
+            color="0.45",
             linestyle="--",
             linewidth=1.3,
             label=rf"$\mathtt{{{pyseobnr_approximant}}}$",
+        )
+        effective_plot_values = effective_values
+        if ylabel == r"$|\Delta\mathbf{P}^{\mathrm{gw}}|/M$":
+            effective_plot_values = effective_values.copy()
+            effective_plot_values[pyseobnr_time > 50000.0] = np.nan
+        axis.plot(
+            pyseobnr_time,
+            effective_plot_values,
+            color="red",
+            linestyle="--",
+            linewidth=1.3,
+            label="effective 0PN",
         )
         axis.set_ylabel(ylabel)
         axis.grid(True, alpha=0.25)
@@ -390,7 +511,7 @@ def _plot_flux_comparison(
     detail_end = float(max(cce_time[-1], pyseobnr_time[-1]))
     cce_mask = cce_time >= detail_start
     pyseobnr_mask = pyseobnr_time >= detail_start
-    inset = axes[-1].inset_axes([0.11, 0.54, 0.37, 0.38])
+    inset = axes[-1].inset_axes([0.55, 0.54, 0.37, 0.38])
     inset.plot(
         cce_time[cce_mask],
         cce_fluxes["planar_momentum"][cce_mask],
@@ -400,12 +521,19 @@ def _plot_flux_comparison(
     inset.plot(
         pyseobnr_time[pyseobnr_mask],
         pyseobnr_fluxes["planar_momentum"][pyseobnr_mask],
+        color="0.45",
+        linestyle="--",
+        linewidth=1.1,
+    )
+    inset.plot(
+        pyseobnr_time[pyseobnr_mask],
+        np.asarray(effective_0pn_fluxes["planar_momentum"], dtype=float)[pyseobnr_mask],
         color="red",
         linestyle="--",
         linewidth=1.1,
     )
     inset.axhline(
-        final_kerr_momentum,
+        bms_remnant_momentum,
         color="blue",
         linestyle="--",
         linewidth=1.1,
@@ -416,7 +544,8 @@ def _plot_flux_comparison(
         [
             cce_fluxes["planar_momentum"][cce_mask],
             pyseobnr_fluxes["planar_momentum"][pyseobnr_mask],
-            np.asarray([final_kerr_momentum]),
+            np.asarray(effective_0pn_fluxes["planar_momentum"], dtype=float)[pyseobnr_mask],
+            np.asarray([bms_remnant_momentum]),
         ]
     )
     detail_values = detail_values[np.isfinite(detail_values)]
@@ -425,6 +554,48 @@ def _plot_flux_comparison(
     inset.grid(alpha=0.22, linewidth=0.5)
     inset.legend(loc="best", frameon=False, fontsize=7)
     mark_inset(axes[-1], inset, loc1=2, loc2=3, fc="none", ec="0.35", linewidth=0.75)
+    early_end = min(float(min(cce_time[-1], pyseobnr_time[-1])), 50000.0)
+    cce_early_mask = cce_time <= early_end
+    pyseobnr_early_mask = pyseobnr_time <= early_end
+    early_inset = axes[-1].inset_axes([0.05, 0.54, 0.37, 0.38])
+    early_inset.plot(
+        cce_time[cce_early_mask],
+        cce_fluxes["planar_momentum"][cce_early_mask],
+        color="black",
+        linewidth=1.2,
+    )
+    early_inset.plot(
+        pyseobnr_time[pyseobnr_early_mask],
+        pyseobnr_fluxes["planar_momentum"][pyseobnr_early_mask],
+        color="0.45",
+        linestyle="--",
+        linewidth=1.1,
+    )
+    early_inset.plot(
+        pyseobnr_time[pyseobnr_early_mask],
+        np.asarray(effective_0pn_fluxes["planar_momentum"], dtype=float)[pyseobnr_early_mask],
+        color="red",
+        linestyle="--",
+        linewidth=1.1,
+    )
+    early_inset.set_xlim(0.0, early_end)
+    early_values = np.concatenate(
+        [
+            cce_fluxes["planar_momentum"][cce_early_mask],
+            pyseobnr_fluxes["planar_momentum"][pyseobnr_early_mask],
+            np.asarray(effective_0pn_fluxes["planar_momentum"], dtype=float)[pyseobnr_early_mask],
+        ]
+    )
+    early_values = early_values[np.isfinite(early_values)]
+    early_inset.set_ylim(0.0, 1.05 * float(np.max(early_values)))
+    early_formatter = ScalarFormatter(useMathText=True)
+    early_formatter.set_scientific(True)
+    early_formatter.set_powerlimits((0, 0))
+    early_formatter.set_useOffset(False)
+    early_inset.yaxis.set_major_formatter(early_formatter)
+    early_inset.tick_params(labelsize=7)
+    early_inset.grid(alpha=0.22, linewidth=0.5)
+    mark_inset(axes[-1], early_inset, loc1=1, loc2=4, fc="none", ec="0.35", linewidth=0.75)
     figure.savefig(png_path, dpi=180)
     plt.close(figure)
 
@@ -435,11 +606,13 @@ def _write_flux_csv(
     cce_fluxes: dict[str, np.ndarray],
     pyseobnr_time: np.ndarray,
     pyseobnr_fluxes: dict[str, np.ndarray],
+    effective_0pn_fluxes: dict[str, np.ndarray | float],
+    bms_radiated_momentum: np.ndarray,
     max_plot_points: int,
 ) -> None:
     points_per_model = max(16, max_plot_points // 2)
-    cce_indices = _endpoint_refined_indices(cce_time, points_per_model)
-    pyseobnr_indices = _endpoint_refined_indices(pyseobnr_time, points_per_model)
+    cce_indices = _flux_csv_indices(cce_time, points_per_model)
+    pyseobnr_indices = _flux_csv_indices(pyseobnr_time, points_per_model)
     time = np.unique(np.concatenate([cce_time[cce_indices], pyseobnr_time[pyseobnr_indices]]))
     cce_values = [
         cce_fluxes["energy_radiated"],
@@ -451,11 +624,27 @@ def _write_flux_csv(
         pyseobnr_fluxes["angular_momentum_radiated"][:, 2],
         pyseobnr_fluxes["planar_momentum"],
     ]
+    effective_values = [
+        np.asarray(effective_0pn_fluxes["energy_radiated"], dtype=float),
+        np.asarray(effective_0pn_fluxes["angular_momentum_radiated"], dtype=float),
+        np.asarray(effective_0pn_fluxes["planar_momentum"], dtype=float),
+    ]
     interpolated = [
         _interp_real_with_nan(time, source_time, values)
-        for source_time, source_values in ((cce_time, cce_values), (pyseobnr_time, pyseobnr_values))
+        for source_time, source_values in (
+            (cce_time, cce_values),
+            (pyseobnr_time, pyseobnr_values),
+            (pyseobnr_time, effective_values),
+        )
         for values in source_values
     ]
+    cce_bms_planar = np.asarray(cce_fluxes["bms_aligned_planar_momentum"], dtype=float)
+    pyseobnr_bms_planar = np.asarray(pyseobnr_fluxes["bms_aligned_planar_momentum"], dtype=float)
+    cce_bms_x = _interp_real_with_nan(time, cce_time, cce_bms_planar[:, 0])
+    cce_bms_y = _interp_real_with_nan(time, cce_time, cce_bms_planar[:, 1])
+    pyseobnr_bms_x = _interp_real_with_nan(time, pyseobnr_time, pyseobnr_bms_planar[:, 0])
+    pyseobnr_bms_y = _interp_real_with_nan(time, pyseobnr_time, pyseobnr_bms_planar[:, 1])
+    bms_target = np.tile(np.asarray(bms_radiated_momentum, dtype=float), (len(time), 1))
     with csv_path.open("w", newline="", encoding="utf-8") as stream:
         writer = csv.writer(stream, lineterminator="\n")
         writer.writerow(
@@ -463,23 +652,72 @@ def _write_flux_csv(
                 "t_minus_t0_M",
                 "NRHybSur3dq8_CCE_energy_radiated_over_M",
                 "SEOBNRv5EHM_energy_radiated_over_M",
+                "effective_0PN_energy_radiated_over_M",
                 "NRHybSur3dq8_CCE_angular_momentum_z_radiated_over_M2",
                 "SEOBNRv5EHM_angular_momentum_z_radiated_over_M2",
+                "effective_0PN_angular_momentum_z_radiated_over_M2",
                 "NRHybSur3dq8_CCE_planar_momentum_over_M",
                 "SEOBNRv5EHM_planar_momentum_over_M",
+                "effective_0PN_planar_momentum_over_M",
+                "NRHybSur3dq8_CCE_BMS_aligned_planar_momentum_x_over_M",
+                "NRHybSur3dq8_CCE_BMS_aligned_planar_momentum_y_over_M",
+                "SEOBNRv5EHM_BMS_aligned_planar_momentum_x_over_M",
+                "SEOBNRv5EHM_BMS_aligned_planar_momentum_y_over_M",
+                "BMS_remnant_radiated_momentum_x_over_M",
+                "BMS_remnant_radiated_momentum_y_over_M",
+                "BMS_remnant_radiated_momentum_z_over_M",
             ]
         )
-        for values in zip(time, *interpolated, strict=True):
-            time_value, cce_energy, cce_jz, cce_pperp, pyseobnr_energy, pyseobnr_jz, pyseobnr_pperp = values
+        for values in zip(
+            time,
+            *interpolated,
+            cce_bms_x,
+            cce_bms_y,
+            pyseobnr_bms_x,
+            pyseobnr_bms_y,
+            bms_target[:, 0],
+            bms_target[:, 1],
+            bms_target[:, 2],
+            strict=True,
+        ):
+            (
+                time_value,
+                cce_energy,
+                cce_jz,
+                cce_pperp,
+                pyseobnr_energy,
+                pyseobnr_jz,
+                pyseobnr_pperp,
+                effective_energy,
+                effective_jz,
+                effective_pperp,
+                cce_bms_p_x,
+                cce_bms_p_y,
+                pyseobnr_bms_p_x,
+                pyseobnr_bms_p_y,
+                bms_target_p_x,
+                bms_target_p_y,
+                bms_target_p_z,
+            ) = values
             writer.writerow(
                 [
                     time_value,
                     cce_energy,
                     pyseobnr_energy,
+                    effective_energy,
                     cce_jz,
                     pyseobnr_jz,
+                    effective_jz,
                     cce_pperp,
                     pyseobnr_pperp,
+                    effective_pperp,
+                    cce_bms_p_x,
+                    cce_bms_p_y,
+                    pyseobnr_bms_p_x,
+                    pyseobnr_bms_p_y,
+                    bms_target_p_x,
+                    bms_target_p_y,
+                    bms_target_p_z,
                 ]
             )
 
@@ -518,15 +756,23 @@ def _replot_flux_comparison_from_csv(
             data["SEOBNRv5EHM_planar_momentum_over_M"], dtype=float
         ),
     }
-    remnant_state = nrsur3dq8_remnant_state(q)
+    effective_0pn_fluxes = {
+        "energy_radiated": np.asarray(data["effective_0PN_energy_radiated_over_M"], dtype=float),
+        "angular_momentum_radiated": np.asarray(
+            data["effective_0PN_angular_momentum_z_radiated_over_M2"], dtype=float
+        ),
+        "planar_momentum": np.asarray(data["effective_0PN_planar_momentum_over_M"], dtype=float),
+    }
+    _bms_remnant_mass, _bms_boost, bms_remnant_momentum = _pn_bms_remnant(q)
     _plot_flux_comparison(
         time,
         cce_fluxes,
         time,
         pyseobnr_fluxes,
+        effective_0pn_fluxes,
         png_path,
         pyseobnr_approximant,
-        _final_kerr_momentum(remnant_state.mass, remnant_state.kick_velocity),
+        bms_remnant_momentum,
     )
 
 
@@ -636,12 +882,9 @@ def main() -> int:
         pyseobnr_modes,
         hdot=pyseobnr_hdot,
     )
-    remnant_state = nrsur3dq8_remnant_state(args.q)
-    final_kerr_velocity = remnant_state.kick_velocity
-    final_kerr_momentum = _final_kerr_momentum(
-        remnant_state.mass,
-        final_kerr_velocity,
-    )
+    bms_remnant_mass, bms_boost, bms_remnant_momentum = _pn_bms_remnant(args.q)
+    bms_gamma = 1.0 / np.sqrt(1.0 - float(np.dot(bms_boost, bms_boost)))
+    bms_radiated_momentum = -bms_gamma * bms_remnant_mass * bms_boost
     cce_fluxes["planar_momentum"] = np.linalg.norm(
         cce_fluxes["linear_momentum_radiated"][:, :2],
         axis=1,
@@ -649,6 +892,30 @@ def main() -> int:
     pyseobnr_fluxes["planar_momentum"] = np.linalg.norm(
         pyseobnr_fluxes["linear_momentum_radiated"][:, :2],
         axis=1,
+    )
+    cce_fluxes["bms_aligned_planar_momentum"], cce_bms_reference_time = _bms_aligned_planar_momentum(
+        t_cce,
+        cce_modes,
+        cce_fluxes["linear_momentum_radiated"],
+    )
+    pyseobnr_fluxes["bms_aligned_planar_momentum"], pyseobnr_bms_reference_time = _bms_aligned_planar_momentum(
+        t_pyseobnr,
+        pyseobnr_modes,
+        pyseobnr_fluxes["linear_momentum_radiated"],
+    )
+    cce_bms_terminal_momentum = np.array(
+        [
+            cce_fluxes["bms_aligned_planar_momentum"][-1, 0],
+            cce_fluxes["bms_aligned_planar_momentum"][-1, 1],
+            cce_fluxes["linear_momentum_radiated"][-1, 2],
+        ]
+    )
+    pyseobnr_bms_terminal_momentum = np.array(
+        [
+            pyseobnr_fluxes["bms_aligned_planar_momentum"][-1, 0],
+            pyseobnr_fluxes["bms_aligned_planar_momentum"][-1, 1],
+            pyseobnr_fluxes["linear_momentum_radiated"][-1, 2],
+        ]
     )
     pyseobnr_memory = compute_memory_modes(
         t_pyseobnr,
@@ -663,6 +930,20 @@ def main() -> int:
 
     rel_cce = t_cce - t_cce[0]
     rel_pyseobnr = t_pyseobnr - t_pyseobnr[0]
+    cce_x_momentum_phase = omega_pyseobnr_start ** (2.0 / 3.0)
+    pyseobnr_x_momentum_phase = omega_pyseobnr_actual_start ** (2.0 / 3.0)
+    cce_effective_0pn_fluxes = _effective_0pn_fluxes(
+        rel_cce,
+        args.q,
+        cce_fluxes,
+        cce_x_momentum_phase,
+    )
+    pyseobnr_effective_0pn_fluxes = _effective_0pn_fluxes(
+        rel_pyseobnr,
+        args.q,
+        pyseobnr_fluxes,
+        pyseobnr_x_momentum_phase,
+    )
     pyseobnr_plateau_duration = max(0.0, float(rel_cce[-1] - rel_pyseobnr[-1]))
     dh20_cce = h_cce[(2, 0)] - h_cce[(2, 0)][0]
     dh20_cce_perturbative = h20_cce_perturbative - h20_cce_perturbative[0]
@@ -763,6 +1044,8 @@ def main() -> int:
         cce_fluxes,
         rel_pyseobnr,
         pyseobnr_fluxes,
+        pyseobnr_effective_0pn_fluxes,
+        bms_radiated_momentum,
         args.max_plot_points,
     )
 
@@ -855,9 +1138,10 @@ def main() -> int:
         cce_fluxes,
         rel_pyseobnr,
         pyseobnr_fluxes,
+        pyseobnr_effective_0pn_fluxes,
         flux_png_path,
         args.pyseobnr_approximant,
-        final_kerr_momentum,
+        bms_remnant_momentum,
     )
 
     print(f"{args.pyseobnr_approximant} vs NRHybSur3dq8_CCE h20/h30 comparison")
@@ -875,6 +1159,22 @@ def main() -> int:
     )
     print(f"x0 = {x0:.12e}")
     print(f"x_eff = {x_eff:.12e}")
+    print(f"effective 0PN x_energy = {pyseobnr_effective_0pn_fluxes['x_energy']:.12e}")
+    print(f"effective 0PN x_jz = {pyseobnr_effective_0pn_fluxes['x_jz']:.12e}")
+    print(f"effective 0PN x_momentum = {pyseobnr_effective_0pn_fluxes['x_momentum']:.12e}")
+    print(f"effective 0PN x_momentum_phase = {pyseobnr_effective_0pn_fluxes['x_momentum_phase']:.12e}")
+    print(f"CCE effective 0PN x_energy = {cce_effective_0pn_fluxes['x_energy']:.12e}")
+    print(f"CCE effective 0PN x_jz = {cce_effective_0pn_fluxes['x_jz']:.12e}")
+    print(f"CCE effective 0PN x_momentum = {cce_effective_0pn_fluxes['x_momentum']:.12e}")
+    print(f"CCE effective 0PN x_momentum_phase = {cce_effective_0pn_fluxes['x_momentum_phase']:.12e}")
+    print(
+        "effective 0PN pre-t0 Delta E^gw / M = "
+        f"{pyseobnr_effective_0pn_fluxes['prehistory_energy']:.12e}"
+    )
+    print(
+        "effective 0PN pre-t0 |Delta P^gw| / M = "
+        f"{pyseobnr_effective_0pn_fluxes['prehistory_planar_momentum']:.12e}"
+    )
     print(f"nu = {nu:.12e}")
     print(f"NRHybSur3dq8_CCE early delta_t = {args.delta_t:g} M")
     print(
@@ -901,7 +1201,17 @@ def main() -> int:
     print(f"final {args.pyseobnr_approximant} Delta h20 / nu = {_format_complex(dh20_pyseobnr_norm[-1])}")
     print(f"final NRHybSur3dq8_CCE Delta h30 / nu = {_format_complex(dh30_cce_norm[-1])}")
     print(f"final {args.pyseobnr_approximant} Delta h30 / nu = {_format_complex(dh30_pyseobnr_norm[-1])}")
-    print(f"final Kerr velocity = {final_kerr_velocity.tolist()}")
+    print(f"PN-BMS remnant boost = {bms_boost.tolist()}")
+    print(f"PN-BMS remnant radiated-momentum target = {bms_radiated_momentum.tolist()}")
+    print(f"PN-BMS remnant momentum magnitude = {bms_remnant_momentum:.12e}")
+    print(
+        "NRHybSur3dq8_CCE PN-BMS phase-reference time since t0 = "
+        f"{cce_bms_reference_time - t_cce[0]:.12e}"
+    )
+    print(
+        f"{args.pyseobnr_approximant} PN-BMS phase-reference time since t0 = "
+        f"{pyseobnr_bms_reference_time - t_pyseobnr[0]:.12e}"
+    )
     print(f"final NRHybSur3dq8_CCE Delta E^gw / M = {cce_fluxes['energy_radiated'][-1]:.12e}")
     print(f"final {args.pyseobnr_approximant} Delta E^gw / M = {pyseobnr_fluxes['energy_radiated'][-1]:.12e}")
     print(
@@ -927,6 +1237,22 @@ def main() -> int:
     print(
         f"final {args.pyseobnr_approximant} Delta P_z^gw / M = "
         f"{pyseobnr_fluxes['linear_momentum_radiated'][-1, 2]:.12e}"
+    )
+    print(
+        "final NRHybSur3dq8_CCE PN-BMS-aligned Delta P^gw / M = "
+        f"{cce_bms_terminal_momentum.tolist()}"
+    )
+    print(
+        f"final {args.pyseobnr_approximant} PN-BMS-aligned Delta P^gw / M = "
+        f"{pyseobnr_bms_terminal_momentum.tolist()}"
+    )
+    print(
+        "NRHybSur3dq8_CCE PN-BMS vector residual / M = "
+        f"{(cce_bms_terminal_momentum - bms_radiated_momentum).tolist()}"
+    )
+    print(
+        f"{args.pyseobnr_approximant} PN-BMS vector residual / M = "
+        f"{(pyseobnr_bms_terminal_momentum - bms_radiated_momentum).tolist()}"
     )
     print(f"Saved CSV: {csv_path}")
     print(f"Saved plot: {png_path}")

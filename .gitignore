@@ -8,5 +8,5 @@ build/
 dist/
 *.egg-info/
 !examples/output/
-!examples/output/*.png
 !examples/output/*.csv
+!examples/output/*.png
