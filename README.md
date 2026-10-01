@@ -60,7 +60,7 @@ Besides the nonlinear-null GW memory, Memorie can also compute the energy, linea
 python examples/seobnrv5ehm_circular_memory_demo.py
 ```
 
-The example uses `SEOBNRv5EHM` to generate the oscillatory modes of a nonprecessing, quasicircular compact binary. It computes $`h^{\mathrm{D}}_{2,0}`$, $`h^{\mathrm{S}}_{3,0}`$, $`h^{\mathrm{D}}_{4,0}`$, and the $`h^{\mathrm{CM}}_{l,m}`$ modes shown in the figure. An effective 0PN parameter $`x_{\mathrm{eff}}`$ is inferred from the initial value of $`\dot h^{\mathrm{D}}_{2,0}`$ and used in the 0PN comparisons.
+The example uses `SEOBNRv5EHM` to generate the oscillatory modes of a nonprecessing, nonspinning, quasicircular compact binary. It computes $`h^{\mathrm{D}}_{2,0}`$, $`h^{\mathrm{S}}_{3,0}`$, $`h^{\mathrm{D}}_{4,0}`$, and the $`h^{\mathrm{CM}}_{l,m}`$ modes shown in the figure. An effective 0PN parameter $`x_{\mathrm{eff}}`$ is inferred from the initial value of $`\dot h^{\mathrm{D}}_{2,0}`$ and used in the 0PN comparisons.
 
 The default initial PN parameter is $`x_0=0.015`$, implemented as `omega_start = 0.015**1.5`. Before calculating CM memory, the example sets $`h^{\mathrm{D}}_{2,0}(t_0)=h^{\mathrm{D},\mathrm{0PN}}_{2,0}(x_{\mathrm{eff}})`$ and $`h^{\mathrm{D}}_{4,0}(t_0)=h^{\mathrm{D},\mathrm{0PN}}_{4,0}(x_{\mathrm{eff}})`$, with $`h^{\mathrm{D},\mathrm{0PN}}_{2,0}(0)=h^{\mathrm{D},\mathrm{0PN}}_{4,0}(0)=0`$. The $`h^{\mathrm{D}}_{2,0}`$ and $`h^{\mathrm{D}}_{4,0}`$ panels show the real part of $`h^{\mathrm{D}}_{l,m}(t)-h^{\mathrm{D}}_{l,m}(t_0)`$, the $`h^{\mathrm{S}}_{3,0}`$ panel shows the imaginary part, and the CM memory panels show $`|h^{\mathrm{CM}}_{l,m}(t)-h^{\mathrm{CM}}_{l,m}(t_0)|_{\mathrm{envelope}}`$.
 
@@ -72,6 +72,10 @@ Example outputs:
 - `examples/output/seobnrv5ehm_circular_memory_q2_omega0.00183712.png`
 
 <p align="center"><img src="examples/output/seobnrv5ehm_circular_memory_q2_omega0.00183712.png?v=fbd223c76d52"  width="85%"></p>
+
+The following figure compares effective 0PN and PN extrapolations; the latter uses the 3.5PN formula for $h^{\mathrm{D}}_{2,0}(x)$ and 3PN circular $\dot{x}$.
+
+<p align="center"><img src="examples/output/seobnrv5ehm_circular_memory_q2_omega0.00183712_h20_effective_prehistory.png" width="85%"></p>
 
 ## SEOBNRv5EHM and NRHybSur3dq8_CCE Comparison
 
@@ -116,7 +120,7 @@ python examples/fastemriwaveforms_emri_h20_h30_demo.py
 
 This example uses `FastEMRIWaveforms` to generate equatorial Kerr trajectories with initial eccentricities $`e_0=0`$ and $`e_0=0.8`$, mass ratio $`q=10^5`$, and spin $`\chi=0.8`$. It reconstructs $`h^{\mathrm{D}}_{2,0}`$ and $`h^{\mathrm{S}}_{3,0}`$ from the oscillatory modes and compares the results with effective 0PN extrapolations. The calculation retains only the nonoscillatory ("DC") component of the memory waveform. With the default `frequency_source = "geodesic"`, the initial frequency parameter is defined by the azimuthal geodesic fundamental frequency: $`x_0=\left[M\Omega_\phi(t_0)\right]^{2/3}`$.
 
-For an eccentric Newtonian binary, [Favata](https://arxiv.org/abs/1108.3121) gives $`\left\langle d h^{\mathrm{D},\mathrm{0PN}}_{2,0}/d(t/M)\right\rangle=\frac{256}{7}\sqrt{\frac{\pi}{30}}\frac{\nu^2 M}{R}\rho(e)^5(1-e^2)^{3/2}\left(1+\frac{145}{48}e^2+\frac{73}{192}e^4\right)`$, where $\rho(e)=M/p(e)$. The leading spin-memory mode is $`\left\langle h^{\mathrm{S},\mathrm{0PN}}_{3,0}(e)\right\rangle=i\frac{16\pi}{25}\sqrt{\frac{30}{7\pi}}\frac{\nu^2 M}{R}\rho(e)^{7/2}(1-e^2)^{3/2}\left(1+\frac{7}{8}e^2\right)`$. The effective 0PN extrapolation uses the semilatus rectum $p(e)$ following the [Peters](https://journals.aps.org/pr/abstract/10.1103/PhysRev.136.B1224) evolution from the effective initial value $\rho_{\mathrm{eff}}$ matched to the $h^{\mathrm{D}}_{2,0}$ DC slope.
+For an eccentric Newtonian binary, [Favata](https://arxiv.org/abs/1108.3121) gives $`\left\langle d h^{\mathrm{D},\mathrm{0PN}}_{2,0}/d(t/M)\right\rangle=\frac{256}{7}\sqrt{\frac{\pi}{30}}\frac{\nu^2 M}{R}(M/p)^5(1-e^2)^{3/2}\left(1+\frac{145}{48}e^2+\frac{73}{192}e^4\right)`$, where $p$ is the semilatus rectum. The leading spin-memory mode is $`\left\langle h^{\mathrm{S},\mathrm{0PN}}_{3,0}(e)\right\rangle=i\frac{16\pi}{25}\sqrt{\frac{30}{7\pi}}\frac{\nu^2 M}{R}(M/p)^{7/2}(1-e^2)^{3/2}\left(1+\frac{7}{8}e^2\right)`$. The effective 0PN extrapolation uses $p(e)$ following the [Peters](https://journals.aps.org/pr/abstract/10.1103/PhysRev.136.B1224) evolution from the effective initial value $p_{\mathrm{eff}}$ matched to the $h^{\mathrm{D}}_{2,0}$ DC slope.
 
 Example outputs:
 
