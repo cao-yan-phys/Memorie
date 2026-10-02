@@ -1,0 +1,49 @@
+site_name: Memorie
+site_url: https://cao-yan-phys.github.io/Memorie/
+repo_url: https://github.com/cao-yan-phys/Memorie
+repo_name: cao-yan-phys/Memorie
+
+theme:
+  name: material
+  language: en
+  favicon: assets/feather.svg
+  icon:
+    logo: material/feather
+  palette:
+    - scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.top
+    - search.suggest
+
+nav:
+  - Documentation: index.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+  - https://cdn.plot.ly/plotly-3.6.0.min.js
+  - javascripts/forgetting_curve.js
+
+extra_css:
+  - stylesheets/extra.css

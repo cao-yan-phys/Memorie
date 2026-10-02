@@ -1,0 +1,21 @@
+:root {
+  --md-primary-fg-color: #c25c46;
+  --md-primary-fg-color--light: #d78b78;
+  --md-primary-fg-color--dark: #983f2e;
+  --md-accent-fg-color: #c25c46;
+}
+
+.forgetting-curve {
+  height: 33rem;
+  width: 100%;
+}
+
+#forgetting-curve .hoverlayer .axistext {
+  display: none;
+}
+
+@media screen and (max-width: 44.9375em) {
+  .forgetting-curve {
+    height: 25rem;
+  }
+}
