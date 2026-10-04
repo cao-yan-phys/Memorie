@@ -1,3 +1,4 @@
+from .bms import bms_boost_matrix, bms_rotation_matrix, transform_bms_modes
 from .core import (
     B_coefficient,
     C_coefficient,
@@ -27,12 +28,12 @@ from .particle_displacement_memory import (
     particle_displacement_memory_mode,
     outflow_speed_transfer,
 )
-from .qnm_ringdown import (
+from .kerr_qnm import (
     KerrQNMExcitation,
-    KerrRingdownConfig,
+    KerrQNMConfig,
     analytic_single_exponential_memory_modes,
-    compute_kerr_ringdown_memory_modes,
-    generate_kerr_ringdown_modes,
+    compute_kerr_qnm_memory_modes,
+    generate_kerr_qnm_modes,
 )
 from .superrad import SuperRadConfig, compute_superrad_memory_modes
 from .pn import (
@@ -50,10 +51,12 @@ from .pn import (
 
 __all__ = [
     "B_coefficient",
+    "bms_boost_matrix",
+    "bms_rotation_matrix",
     "C_coefficient",
     "FewEmriConfig",
     "KerrQNMExcitation",
-    "KerrRingdownConfig",
+    "KerrQNMConfig",
     "NRSur3dq8RemnantState",
     "NullParticle",
     "SuperRadConfig",
@@ -65,7 +68,7 @@ __all__ = [
     "compute_poincare_fluxes",
     "compute_vacuum_null_memory_mode",
     "compute_few_emri_memory_modes",
-    "compute_kerr_ringdown_memory_modes",
+    "compute_kerr_qnm_memory_modes",
     "compute_superrad_memory_modes",
     "cumulative_integral",
     "delta_mass_fraction",
@@ -73,7 +76,7 @@ __all__ = [
     "gamma_cm",
     "gamma_displacement",
     "gamma_spin",
-    "generate_kerr_ringdown_modes",
+    "generate_kerr_qnm_modes",
     "h20_lo",
     "h40_lo",
     "h30_spin_lo",
@@ -90,4 +93,5 @@ __all__ = [
     "phase_from_h22_lo",
     "precompute_memory_coeffs",
     "symmetric_mass_ratio",
+    "transform_bms_modes",
 ]

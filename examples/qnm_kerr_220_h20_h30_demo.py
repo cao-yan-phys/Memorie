@@ -14,10 +14,10 @@ if str(SRC) not in sys.path:
 
 from memorie import (
     KerrQNMExcitation,
-    KerrRingdownConfig,
+    KerrQNMConfig,
     analytic_single_exponential_memory_modes,
     compute_memory_modes,
-    generate_kerr_ringdown_modes,
+    generate_kerr_qnm_modes,
 )
 
 
@@ -50,7 +50,7 @@ def main() -> int:
         parser.error("--amplitude must be nonzero")
     amplitude_abs_squared = abs(complex(args.amplitude)) ** 2
 
-    config = KerrRingdownConfig(
+    config = KerrQNMConfig(
         spin=args.spin,
         start_time_M=args.start_time_M,
         end_time_M=args.end_time_M,
@@ -63,7 +63,7 @@ def main() -> int:
         amplitude=complex(args.amplitude),
     )
     targets = ((2, 0), (3, 0))
-    result = generate_kerr_ringdown_modes(
+    result = generate_kerr_qnm_modes(
         config,
         (excitation,),
         lmax=args.lmax,
@@ -130,7 +130,7 @@ def main() -> int:
     analytic_hS30 = analytic_components[((3, 0), "h_spin_mode")]
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    stem = f"qnm_kerr_ringdown_220_h20_h30_chi{_token(args.spin)}"
+    stem = f"qnm_kerr_220_h20_h30_chi{_token(args.spin)}"
     csv_path = args.output_dir / f"{stem}.csv"
     png_path = args.output_dir / f"{stem}.png"
     with csv_path.open("w", newline="", encoding="utf-8") as stream:

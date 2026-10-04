@@ -168,17 +168,17 @@ Example outputs:
 ## `qnm` Example
 
 ```bash
-python examples/qnm_kerr_ringdown_220_h20_h30_demo.py
+python examples/qnm_kerr_220_h20_h30_demo.py
 ```
 
 This example uses `qnm` to construct the explicitly supplied fundamental spin-weighted spheroidal QNM $(l_{\mathrm{s}},m,n)=(2,2,0)$ of a Kerr BH with spin $\chi=0.7$. Spheroidal-to-spherical mixing preserves $m$, so the input waveform has vanishing $(2,0)$ and $(3,0)$ modes. For $u=(t-t_0)/M$ and $\omega_{220}=\omega_R+i\omega_I$ with $\omega_I<0$, each of the displayed displacement and spin components is proportional to $1-e^{2\omega_Iu}$. The plotted memory modes are normalized by $|A_{220}|^2$, with $A_{220}$ denoting the spheroidal-mode amplitude at $t_0$.
 
 Example outputs:
 
-- `examples/output/qnm_kerr_ringdown_220_h20_h30_chi0p7.csv`
-- `examples/output/qnm_kerr_ringdown_220_h20_h30_chi0p7.png`
+- `examples/output/qnm_kerr_220_h20_h30_chi0p7.csv`
+- `examples/output/qnm_kerr_220_h20_h30_chi0p7.png`
 
-<p align="center"><img src="https://raw.githubusercontent.com/cao-yan-phys/Memorie/main/examples/output/qnm_kerr_ringdown_220_h20_h30_chi0p7.png?v=fec4d76d8a84" width="85%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/cao-yan-phys/Memorie/main/examples/output/qnm_kerr_220_h20_h30_chi0p7.png?v=fec4d76d8a84" width="85%"></p>
 
 ## The Persistence of Displacement Memory
 

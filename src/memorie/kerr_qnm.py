@@ -35,7 +35,7 @@ class KerrQNMExcitation:
 
 
 @dataclass(frozen=True)
-class KerrRingdownConfig:
+class KerrQNMConfig:
 
     spin: float = 0.7
     start_time_M: float = 0.0
@@ -55,7 +55,7 @@ def _qnm_module() -> Any:
     try:
         import qnm
     except ImportError as exc:
-        raise ImportError("The Kerr-ringdown helper requires the optional 'qnm' package.") from exc
+        raise ImportError("The Kerr QNM helper requires the optional 'qnm' package.") from exc
     return qnm
 
 
@@ -89,8 +89,8 @@ def _spherical_amplitudes(
     return omega, amplitudes
 
 
-def generate_kerr_ringdown_modes(
-    config: KerrRingdownConfig,
+def generate_kerr_qnm_modes(
+    config: KerrQNMConfig,
     excitations: Iterable[KerrQNMExcitation],
     lmax: int = 10,
 ) -> dict[str, Any]:
@@ -139,15 +139,15 @@ def generate_kerr_ringdown_modes(
     }
 
 
-def compute_kerr_ringdown_memory_modes(
-    config: KerrRingdownConfig,
+def compute_kerr_qnm_memory_modes(
+    config: KerrQNMConfig,
     excitations: Iterable[KerrQNMExcitation],
     targets: Iterable[tuple[int, int]],
     lmax: int = 10,
     include_cm: bool = True,
 ) -> dict[str, Any]:
 
-    result = generate_kerr_ringdown_modes(config, excitations, lmax=lmax)
+    result = generate_kerr_qnm_modes(config, excitations, lmax=lmax)
     result["memory"] = compute_memory_modes(
         result["t_dimensionless"],
         result["oscillatory_modes_dimensionless"],
