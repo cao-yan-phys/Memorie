@@ -362,8 +362,8 @@ def compute_vacuum_null_memory_mode(
 
     L, M = int(coeff_list[0][0]), int(coeff_list[0][1])
     displacement_source = np.zeros_like(t_arr, dtype=complex)
-    h_spin_mode = np.zeros_like(t_arr, dtype=complex)
-    h_cm_mode = np.zeros_like(t_arr, dtype=complex) if include_cm else None
+    h_spin = np.zeros_like(t_arr, dtype=complex)
+    h_cm = np.zeros_like(t_arr, dtype=complex) if include_cm else None
     used_terms = 0
     skipped_terms = 0
 
@@ -387,23 +387,23 @@ def compute_vacuum_null_memory_mode(
         dh1 = hdot_norm[mode1]
         dh2 = hdot_norm[mode2]
         displacement_source += float(gD) * dh1 * np.conjugate(dh2)
-        h_spin_mode += float(gS) * (h1 * np.conjugate(dh2) - dh1 * np.conjugate(h2))
+        h_spin += float(gS) * (h1 * np.conjugate(dh2) - dh1 * np.conjugate(h2))
         if include_cm:
-            h_cm_mode += float(gCM) * (h1 * np.conjugate(dh2) - dh1 * np.conjugate(h2))
+            h_cm += float(gCM) * (h1 * np.conjugate(dh2) - dh1 * np.conjugate(h2))
         used_terms += 1
 
     result = {
         "target_mode": (L, M),
         "dh_displacement_dt": displacement_source,
         "h_displacement": cumulative_integral(t_arr, displacement_source),
-        "h_spin_mode": h_spin_mode,
-        "spin_memory_integral": cumulative_integral(t_arr, h_spin_mode),
+        "h_spin": h_spin,
+        "spin_memory_integral": cumulative_integral(t_arr, h_spin),
         "used_terms": used_terms,
         "skipped_terms": skipped_terms,
     }
     if include_cm:
-        result["h_cm_mode"] = h_cm_mode
-        result["cm_memory_integral"] = cumulative_integral(t_arr, h_cm_mode)
+        result["h_cm"] = h_cm
+        result["cm_memory_integral"] = cumulative_integral(t_arr, h_cm)
     return result
 
 

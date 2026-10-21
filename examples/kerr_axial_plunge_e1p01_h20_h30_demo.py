@@ -113,12 +113,12 @@ def main() -> int:
             - memory[target][component_name][0]
         )
         for target in ((2, 0), (3, 0))
-        for component_name in ("h_displacement", "h_spin_mode")
+        for component_name in ("h_displacement", "h_spin")
     }
     nonlinear_h20_D = delta_components[((2, 0), "h_displacement")]
-    nonlinear_h20_S = delta_components[((2, 0), "h_spin_mode")]
+    nonlinear_h20_S = delta_components[((2, 0), "h_spin")]
     nonlinear_h30_D = delta_components[((3, 0), "h_displacement")]
-    nonlinear_h30_S = delta_components[((3, 0), "h_spin_mode")]
+    nonlinear_h30_S = delta_components[((3, 0), "h_spin")]
     nonlinear_h20 = nonlinear_h20_D + nonlinear_h20_S
     nonlinear_h30 = nonlinear_h30_D + nonlinear_h30_S
 
@@ -236,7 +236,7 @@ def main() -> int:
     for target, short_name in (((2, 0), "20"), ((3, 0), "30")):
         for component_name, symbol in (
             ("h_displacement", "D"),
-            ("h_spin_mode", "S"),
+            ("h_spin", "S"),
         ):
             value = delta_components[(target, component_name)][-1]
             print(f"delta_h{symbol}{short_name}_over_nu={value.real:+.12e}{value.imag:+.12e}j")

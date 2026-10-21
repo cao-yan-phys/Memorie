@@ -205,7 +205,7 @@ def analytic_single_exponential_memory_modes(
             "target_mode": (int(target[0]), int(target[1])),
             "dh_displacement_dt": displacement_source_initial * decay,
             "h_displacement": displacement_source_initial * integral,
-            "h_spin_mode": spin_initial * decay,
+            "h_spin": spin_initial * decay,
             "used_terms": used_terms,
             "skipped_terms": skipped_terms,
         }

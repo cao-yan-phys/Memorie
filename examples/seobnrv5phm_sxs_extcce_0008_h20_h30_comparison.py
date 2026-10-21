@@ -645,7 +645,7 @@ def main() -> int:
         eob_elapsed, h_eob[(3, 0)], sxs_reference_elapsed, alignment_delta_t
     )
     h20_null_memory = eob_memory[(2, 0)]["h_displacement"]
-    h30_null_memory = eob_memory[(3, 0)]["h_spin_mode"]
+    h30_null_memory = eob_memory[(3, 0)]["h_spin"]
     _relative_eob_time_h20_memory, delta_h20_memory, _eob_reference_elapsed_h20_memory = _aligned_eob_change(
         eob_elapsed,
         h20_null_memory,
