@@ -234,8 +234,8 @@ def main() -> int:
     print("mode        full + 0PN (3,1)        truncated + 0PN         corrected LO PN")
     rows = []
     for target in cm_targets:
-        supplemented = with_supplemented_modes[target]["h_cm_mode"][0]
-        truncated = with_truncated_modes[target]["h_cm_mode"][0]
+        supplemented = with_supplemented_modes[target]["h_cm"][0]
+        truncated = with_truncated_modes[target]["h_cm"][0]
         full = cm_lo_full[target]
         rows.append(
             {
@@ -324,7 +324,7 @@ def main() -> int:
             (
                 r"Im $\Delta h^{\rm S}_{3,0}/(\nu M/R)$",
                 t_plot,
-                np.imag(primary[(3, 0)]["h_spin_mode"][indices] - primary[(3, 0)]["h_spin_mode"][0]) / nu,
+                np.imag(primary[(3, 0)]["h_spin"][indices] - primary[(3, 0)]["h_spin"][0]) / nu,
                 t_plot,
                 np.imag(h30_0pn - h30_0pn[0]) / nu,
             ),
@@ -343,19 +343,19 @@ def main() -> int:
             "time_M": t_plot,
             "h20_numeric": np.real(h20[indices] - h20[0]) / nu,
             "h20_0pn": np.real(h20_0pn - h20_0pn[0]) / nu,
-            "h30_numeric": np.imag(primary[(3, 0)]["h_spin_mode"][indices] - primary[(3, 0)]["h_spin_mode"][0]) / nu,
+            "h30_numeric": np.imag(primary[(3, 0)]["h_spin"][indices] - primary[(3, 0)]["h_spin"][0]) / nu,
             "h30_0pn": np.imag(h30_0pn - h30_0pn[0]) / nu,
             "h40_numeric": np.real(h40[indices] - h40[0]) / nu,
             "h40_0pn": np.real(h40_0pn - h40_0pn[0]) / nu,
         }
         for target in cm_targets:
             supplemented = np.abs(
-                with_supplemented_modes[target]["h_cm_mode"][indices]
-                - with_supplemented_modes[target]["h_cm_mode"][0]
+                with_supplemented_modes[target]["h_cm"][indices]
+                - with_supplemented_modes[target]["h_cm"][0]
             ) / nu
             truncated = np.abs(
-                with_truncated_modes[target]["h_cm_mode"][indices]
-                - with_truncated_modes[target]["h_cm_mode"][0]
+                with_truncated_modes[target]["h_cm"][indices]
+                - with_truncated_modes[target]["h_cm"][0]
             ) / nu
             effective_0pn = np.abs(cm_0pn[target] - cm_0pn[target][0]) / nu
             supplemented_t, supplemented_envelope = _cycle_max_envelope(

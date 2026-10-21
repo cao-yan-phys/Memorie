@@ -90,23 +90,23 @@ def main() -> int:
     delta_components = {
         (target, component_name): _delta(memory[target][component_name])
         for target in targets
-        for component_name in ("h_displacement", "h_spin_mode")
+        for component_name in ("h_displacement", "h_spin")
     }
     delta_hD20 = delta_components[((2, 0), "h_displacement")]
-    delta_hS20 = delta_components[((2, 0), "h_spin_mode")]
+    delta_hS20 = delta_components[((2, 0), "h_spin")]
     delta_hD30 = delta_components[((3, 0), "h_displacement")]
-    delta_hS30 = delta_components[((3, 0), "h_spin_mode")]
+    delta_hS30 = delta_components[((3, 0), "h_spin")]
 
     numerical_components = {
         ((2, 0), "h_displacement"): delta_hD20,
-        ((2, 0), "h_spin_mode"): delta_hS20,
+        ((2, 0), "h_spin"): delta_hS20,
         ((3, 0), "h_displacement"): delta_hD30,
-        ((3, 0), "h_spin_mode"): delta_hS30,
+        ((3, 0), "h_spin"): delta_hS30,
     }
     analytic_components = {
         (target, component_name): _delta(analytic[target][component_name])
         for target in targets
-        for component_name in ("h_displacement", "h_spin_mode")
+        for component_name in ("h_displacement", "h_spin")
     }
     relative_errors = {
         key: _max_relative_error(values, analytic_components[key])
@@ -125,9 +125,9 @@ def main() -> int:
         )
 
     analytic_hD20 = analytic_components[((2, 0), "h_displacement")]
-    analytic_hS20 = analytic_components[((2, 0), "h_spin_mode")]
+    analytic_hS20 = analytic_components[((2, 0), "h_spin")]
     analytic_hD30 = analytic_components[((3, 0), "h_displacement")]
-    analytic_hS30 = analytic_components[((3, 0), "h_spin_mode")]
+    analytic_hS30 = analytic_components[((3, 0), "h_spin")]
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     stem = f"qnm_kerr_220_h20_h30_chi{_token(args.spin)}"
@@ -250,7 +250,7 @@ def main() -> int:
     for target, short_name in (((2, 0), "20"), ((3, 0), "30")):
         for component_name, symbol in (
             ("h_displacement", "D"),
-            ("h_spin_mode", "S"),
+            ("h_spin", "S"),
         ):
             value = delta_components[(target, component_name)][-1] / amplitude_abs_squared
             print(

@@ -926,7 +926,7 @@ def main() -> int:
     )
     h20_pyseobnr = pyseobnr_memory[(2, 0)]["h_displacement"]
     dh20_dt_pyseobnr = pyseobnr_memory[(2, 0)]["dh_displacement_dt"]
-    h30_pyseobnr = pyseobnr_memory[(3, 0)]["h_spin_mode"]
+    h30_pyseobnr = pyseobnr_memory[(3, 0)]["h_spin"]
 
     rel_cce = t_cce - t_cce[0]
     rel_pyseobnr = t_pyseobnr - t_pyseobnr[0]

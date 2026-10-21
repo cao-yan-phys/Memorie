@@ -10,6 +10,14 @@
   width: 100%;
 }
 
+.md-source__facts {
+  display: none;
+}
+
+.md-footer {
+  display: none;
+}
+
 #forgetting-curve .hoverlayer .axistext {
   display: none;
 }

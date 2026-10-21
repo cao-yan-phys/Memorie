@@ -3,6 +3,9 @@ site_url: https://cao-yan-phys.github.io/Memorie/
 repo_url: https://github.com/cao-yan-phys/Memorie
 repo_name: cao-yan-phys/Memorie
 
+extra:
+  generator: false
+
 theme:
   name: material
   language: en

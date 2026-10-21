@@ -250,5 +250,5 @@ def compute_superrad_memory_modes(
     if (2, 0) in memory:
         result["h20_dimensionless"] = memory[(2, 0)]["h_displacement"]
     if (3, 0) in memory:
-        result["h30_dimensionless"] = memory[(3, 0)]["h_spin_mode"]
+        result["h30_dimensionless"] = memory[(3, 0)]["h_spin"]
     return result

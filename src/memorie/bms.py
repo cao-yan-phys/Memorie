@@ -5,7 +5,7 @@ from math import factorial, pi, sqrt
 
 import numpy as np
 from scipy.interpolate import CubicSpline
-from scipy.special import roots_legendre
+from scipy.special import eval_jacobi, gammaln, roots_legendre
 
 from .core import normalize_mode_dict, validate_time_grid
 
@@ -43,30 +43,24 @@ def bms_boost_matrix(velocity):
 def _spin_harmonic(ell, emm, spin, theta, phi):
     if ell < abs(spin) or abs(emm) > ell:
         return np.zeros_like(theta, dtype=complex)
-    column = -spin
-    prefactor = sqrt(
-        factorial(ell + emm)
-        * factorial(ell - emm)
-        * factorial(ell + column)
-        * factorial(ell - column)
+    row, column = emm, -spin
+    sign = 1
+    if abs(row) < abs(column):
+        sign *= (-1) ** (row - column)
+        row, column = column, row
+    if row < 0:
+        sign *= (-1) ** (row - column)
+        row, column = -row, -column
+    prefactor = np.exp(0.5 * (
+        gammaln(ell + row + 1) + gammaln(ell - row + 1)
+        - gammaln(ell + column + 1) - gammaln(ell - column + 1)
+    ))
+    small_d = (
+        sign * (-1) ** (row - column) * prefactor
+        * np.sin(theta / 2) ** (row - column)
+        * np.cos(theta / 2) ** (row + column)
+        * eval_jacobi(ell - row, row - column, row + column, np.cos(theta))
     )
-    cosine = np.cos(theta / 2)
-    sine = np.sin(theta / 2)
-    small_d = np.zeros_like(theta, dtype=float)
-    for k in range(max(0, column - emm), min(ell + column, ell - emm) + 1):
-        denominator = (
-            factorial(ell + column - k)
-            * factorial(k)
-            * factorial(emm - column + k)
-            * factorial(ell - emm - k)
-        )
-        small_d += (
-            (-1) ** (k - emm + column)
-            * prefactor
-            / denominator
-            * cosine ** (2 * ell + column - emm - 2 * k)
-            * sine ** (emm - column + 2 * k)
-        )
     return (
         (-1) ** spin
         * sqrt((2 * ell + 1) / (4 * pi))
@@ -81,7 +75,7 @@ def _harmonic_matrix(modes, spin, theta, phi):
     )
 
 
-def transform_bms_modes(
+def _transform_bms_modes_fixed(
     t,
     h: Mapping,
     *,
@@ -192,12 +186,28 @@ def transform_bms_modes(
         ],
         dtype=complex,
     )
-    lower = np.max(k * (t[0] - alpha_values))
-    upper = np.min(k * (t[-1] - alpha_values))
+    monopole = np.real(alpha.get((0, 0), 0.0)) / sqrt(4 * pi)
+    radius = sum(
+        sqrt((2 * ell + 1) / (4 * pi)) * np.linalg.norm(
+            [value for (degree, _), value in alpha.items() if degree == ell]
+        )
+        for ell in range(1, ell_alpha + 1)
+    )
+    inverse = np.linalg.inv(lorentz)
+    k_bounds = np.linalg.eigvalsh(inverse.conj().T @ inverse)
+    lower = np.max(k_bounds * (t[0] - monopole + radius))
+    upper = np.min(k_bounds * (t[-1] - monopole - radius))
+    support_tolerance = 32 * np.finfo(float).eps * max(
+        1, abs(lower), abs(upper),
+        k_bounds[-1] * (max(abs(t[0]), abs(t[-1])) + abs(monopole) + radius),
+    )
     if output_t is None:
         monopole = np.real(alpha.get((0, 0), 0.0)) / sqrt(4 * pi)
         candidate = t - monopole
-        output_t = candidate[(candidate >= lower - 1e-12) & (candidate <= upper + 1e-12)]
+        output_t = candidate[
+            (candidate >= lower - support_tolerance)
+            & (candidate <= upper + support_tolerance)
+        ]
         if not len(output_t):
             raise ValueError("transformed full-sphere time interval has no input samples")
     else:
@@ -209,7 +219,7 @@ def transform_bms_modes(
             or np.any(np.diff(output_t) <= 0)
         ):
             raise ValueError("output_t must be a nonempty increasing finite array")
-        if output_t[0] < lower - 1e-12 or output_t[-1] > upper + 1e-12:
+        if output_t[0] < lower - support_tolerance or output_t[-1] > upper + support_tolerance:
             raise ValueError("output_t requires extrapolation at some angles")
     input_modes = list(h)
     output_modes = [
@@ -218,13 +228,13 @@ def transform_bms_modes(
         for emm in range(-ell, ell + 1)
     ]
     input_data = np.column_stack([h[mode] for mode in input_modes])
+    input_spline = CubicSpline(t, input_data, extrapolate=False)
     output_data = np.zeros((len(output_t), len(output_modes)), dtype=complex)
     for start in range(0, len(k), angular_batch):
         stop = min(start + angular_batch, len(k))
         old_harmonics = _harmonic_matrix(
             input_modes, -2, theta_old[start:stop], phi_old[start:stop]
         )
-        old_field = input_data @ old_harmonics.T
         if alpha_modes:
             old_shift = _harmonic_matrix(
                 alpha_modes, -2, theta_old[start:stop], phi_old[start:stop]
@@ -235,9 +245,54 @@ def transform_bms_modes(
         for j in range(stop - start):
             index = start + j
             old_times = output_t / k[index] + alpha_values[index]
-            new_field[:, j] = (CubicSpline(t, old_field[:, j])(old_times) - old_shift[j]) * phase[index]
+            tolerance = 32 * np.finfo(float).eps * max(1, abs(t[0]), abs(t[-1]))
+            if np.any(old_times < t[0] - tolerance) or np.any(old_times > t[-1] + tolerance):
+                raise ValueError("output_t requires extrapolation at some angles")
+            values = input_spline(np.clip(old_times, t[0], t[-1])) @ old_harmonics[j]
+            new_field[:, j] = (values - old_shift[j]) * phase[index]
         new_harmonics = _harmonic_matrix(
             output_modes, -2, theta_new[start:stop], phi_new[start:stop]
         )
         output_data += (new_field * weights[start:stop]) @ np.conjugate(new_harmonics)
     return output_t, {mode: output_data[:, i] for i, mode in enumerate(output_modes)}
+
+
+def transform_bms_modes(
+    t, h: Mapping, *, supertranslation: Mapping | None = None,
+    lorentz=None, output_t=None, output_lmax=None,
+    n_theta=None, n_phi=None, angular_batch=64,
+    angular_rtol=1e-7, angular_atol=1e-10, max_refinements=5,
+):
+    if not np.isfinite(angular_atol) or angular_atol < 0:
+        raise ValueError("angular_atol must be finite and nonnegative")
+    if angular_rtol is not None and (not np.isfinite(angular_rtol) or angular_rtol < 0):
+        raise ValueError("angular_rtol must be finite and nonnegative")
+    if not isinstance(max_refinements, int) or max_refinements < 1:
+        raise ValueError("max_refinements must be a positive integer")
+    if angular_rtol is None and (n_theta is None or n_phi is None):
+        raise ValueError("fixed quadrature requires explicit n_theta and n_phi")
+    options = dict(
+        supertranslation=supertranslation, lorentz=lorentz, output_t=output_t,
+        output_lmax=output_lmax, angular_batch=angular_batch,
+    )
+    times, previous = _transform_bms_modes_fixed(
+        t, h, n_theta=n_theta, n_phi=n_phi, **options,
+    )
+    if angular_rtol is None:
+        return times, previous
+    ell_in = max(ell for ell, _ in normalize_mode_dict(h))
+    ell_alpha = max((ell for ell, _ in normalize_mode_dict(supertranslation or {})), default=0)
+    ell_out = max(ell for ell, _ in previous)
+    resolution = 2 * (ell_in + ell_alpha + ell_out) + 1
+    nt = resolution if n_theta is None else n_theta
+    np_ = resolution if n_phi is None else n_phi
+    options["output_t"] = times
+    for _ in range(max_refinements):
+        nt, np_ = 2 * nt + 1, 2 * np_ + 1
+        _, current = _transform_bms_modes_fixed(t, h, n_theta=nt, n_phi=np_, **options)
+        if all(np.all(np.abs(current[mode] - previous[mode]) <= (
+            angular_atol + angular_rtol * np.abs(current[mode])
+        )) for mode in current):
+            return times, current
+        previous = current
+    raise RuntimeError("BMS angular quadrature did not converge; increase resolution or max_refinements")
