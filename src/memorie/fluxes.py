@@ -6,6 +6,7 @@ from typing import Any
 
 import numpy as np
 
+from .bms import _harmonic_matrix
 from .core import (
     ModeDict,
     cumulative_integral,
@@ -139,3 +140,56 @@ def compute_poincare_fluxes(
         "linear_momentum_radiated": _vector_integral(t_arr, linear_momentum_flux),
         "angular_momentum_radiated": _vector_integral(t_arr, angular_momentum_flux),
     }
+
+
+def compute_helicity_flux(
+    t: Any,
+    h: Mapping[Any, Any],
+    hdot: Mapping[Any, Any] | None = None,
+    *,
+    theta: Any = None,
+    phi: Any = None,
+) -> dict[str, np.ndarray]:
+    t_arr = validate_time_grid(t)
+    if not np.isfinite(t_arr).all():
+        raise ValueError("t must be finite")
+    strain = normalize_mode_dict(h)
+    if not strain:
+        raise ValueError("h must contain at least one strain mode")
+    _validate_modes(strain)
+    for mode, values in strain.items():
+        if values.shape != t_arr.shape or not np.isfinite(values).all():
+            raise ValueError(f"h[{mode}] must be a finite array with the shape of t")
+    news = differentiate_modes(t_arr, strain) if hdot is None else normalize_mode_dict(hdot)
+    if set(news) != set(strain):
+        raise ValueError("hdot must contain exactly the modes supplied in h")
+    for mode, values in news.items():
+        if values.shape != t_arr.shape or not np.isfinite(values).all():
+            raise ValueError(f"hdot[{mode}] must be a finite array with the shape of t")
+
+    if (theta is None) != (phi is None):
+        raise ValueError("theta and phi must be provided together")
+    if theta is not None:
+        theta, phi = np.broadcast_arrays(np.asarray(theta, dtype=float), np.asarray(phi, dtype=float))
+        if theta.size == 0 or not np.isfinite(theta).all() or not np.isfinite(phi).all():
+            raise ValueError("theta and phi must be nonempty and finite")
+        if np.any((theta < 0.0) | (theta > pi)):
+            raise ValueError("theta must be in [0, pi]")
+
+    flux = np.zeros_like(t_arr)
+    for mode, values in strain.items():
+        flux -= np.imag(np.conjugate(values) * news[mode])
+    flux /= 16.0 * pi
+    result = {"helicity_flux": flux, "helicity_radiated": cumulative_integral(t_arr, flux)}
+
+    if theta is not None:
+        harmonics = _harmonic_matrix(list(strain), -2, theta.ravel(), phi.ravel()).T
+        field = np.column_stack(list(strain.values())) @ harmonics
+        field_dot = np.column_stack([news[mode] for mode in strain]) @ harmonics
+        density = -np.imag(np.conjugate(field) * field_dot) / (16.0 * pi)
+        shape = (len(t_arr), *theta.shape)
+        result["helicity_flux_density"] = density.reshape(shape)
+        result["helicity_radiated_density"] = np.stack(
+            [cumulative_integral(t_arr, column) for column in density.T], axis=1
+        ).reshape(shape)
+    return result

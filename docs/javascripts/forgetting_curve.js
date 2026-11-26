@@ -1,4 +1,6 @@
 (() => {
+  const visible = [true, true, true];
+
   function coefficient2(v) {
     if (v === 1) return 1;
     return (v * (5 * v ** 2 - 3) + 3 * (v ** 2 - 1) ** 2 * Math.atanh(v)) / (2 * v ** 4);
@@ -14,14 +16,43 @@
     return -(81 * v ** 5 - 190 * v ** 3 + 15 * (v ** 2 - 7) * (v ** 2 - 1) ** 2 * Math.atanh(v) + 105 * v) / (4 * v ** 6);
   }
 
+  function setupPlot(container, colors) {
+    let [legend, plot] = container.children;
+    if (!plot) {
+      legend = document.createElement("div");
+      legend.className = "forgetting-curve-legend";
+      plot = document.createElement("div");
+      plot.className = "forgetting-curve-plot";
+      for (let index = 0; index < visible.length; index++) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.innerHTML = "<i>l</i> = " + (index + 2);
+        button.setAttribute("aria-pressed", String(visible[index]));
+        button.addEventListener("click", () => {
+          visible[index] = !visible[index];
+          button.setAttribute("aria-pressed", String(visible[index]));
+          Plotly.restyle(plot, { visible: visible[index] }, [2 * index, 2 * index + 1]);
+        });
+        legend.append(button);
+      }
+      const key = document.createElement("span");
+      key.innerHTML = "small-<i>V</i> asymptotes";
+      legend.append(key);
+      container.append(legend, plot);
+    }
+    colors.forEach((color, index) => legend.children[index].style.setProperty("--curve-color", color));
+    return plot;
+  }
+
   function render() {
-    const element = document.getElementById("forgetting-curve");
-    if (!element || !window.Plotly) return;
+    const container = document.getElementById("forgetting-curve");
+    if (!container || !window.Plotly) return;
 
     const dark = document.body.dataset.mdColorScheme === "slate";
     const foreground = dark ? "#e8eaed" : "#1f2937";
     const grid = dark ? "rgba(232, 234, 237, 0.18)" : "rgba(31, 41, 55, 0.18)";
     const colors = dark ? ["#f2f4f7", "#f97066", "#84adff"] : ["#101828", "#d92d20", "#175cd3"];
+    const element = setupPlot(container, colors);
     const v = Array.from({ length: 501 }, (_, index) => 1 - 0.9 * index / 500);
     const reciprocalV = v.map((value) => 1 / value);
     const values = [coefficient2, coefficient3, coefficient4].map((coefficient) => v.map(coefficient));
@@ -37,8 +68,7 @@
         type: "scatter",
         mode: "lines",
         line: { color: colors[index], width: 3 },
-        legendgroup: "l" + (index + 2),
-        name: "<i>l</i> = " + (index + 2),
+        visible: visible[index],
         hoverinfo: "skip"
       },
       {
@@ -47,8 +77,7 @@
         type: "scatter",
         mode: "lines",
         line: { color: colors[index], dash: "dash", width: 2 },
-        legendgroup: "l" + (index + 2),
-        showlegend: false,
+        visible: visible[index],
         hoverinfo: "skip"
       }
     ]);
@@ -73,7 +102,7 @@
     const layout = {
       autosize: true,
       height: element.clientHeight,
-      margin: { l: 72, r: 24, t: 64, b: 64 },
+      margin: { l: 72, r: 24, t: 24, b: 64 },
       paper_bgcolor: "rgba(0, 0, 0, 0)",
       plot_bgcolor: "rgba(0, 0, 0, 0)",
       font: { color: foreground, size: 15 },
@@ -84,15 +113,7 @@
         font: { color: foreground, size: 14 }
       },
       hovermode: "x",
-      legend: {
-        font: { color: foreground, size: 15 },
-        groupclick: "togglegroup",
-        orientation: "h",
-        x: 0.5,
-        xanchor: "center",
-        y: 1.08,
-        yanchor: "bottom"
-      },
+      showlegend: false,
       xaxis: {
         ...axis,
         range: [1, 10],

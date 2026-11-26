@@ -5,9 +5,53 @@
   --md-accent-fg-color: #c25c46;
 }
 
-.forgetting-curve {
+.forgetting-curve-plot {
   height: 33rem;
   width: 100%;
+}
+
+.forgetting-curve-legend {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: safe center;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding: 0.15rem;
+  font-family: "Open Sans", Verdana, Arial, sans-serif;
+  font-size: 15px;
+}
+
+.forgetting-curve-legend > * {
+  flex: none;
+  white-space: nowrap;
+}
+
+.forgetting-curve-legend > *::before {
+  content: "";
+  display: inline-block;
+  width: 0.95rem;
+  margin-right: 0.25rem;
+  border-top: 2px solid var(--curve-color, currentColor);
+  vertical-align: middle;
+}
+
+.forgetting-curve-legend > span::before {
+  border-top-style: dashed;
+}
+
+.forgetting-curve-legend > button {
+  cursor: pointer;
+  font: inherit;
+}
+
+.forgetting-curve-legend > button[aria-pressed="false"] {
+  opacity: 0.55;
+}
+
+.forgetting-curve-legend > button:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: 2px;
 }
 
 .md-source__facts {
@@ -23,7 +67,16 @@
 }
 
 @media screen and (max-width: 44.9375em) {
-  .forgetting-curve {
+  .forgetting-curve-plot {
     height: 25rem;
+  }
+
+  .forgetting-curve-legend {
+    gap: 0.45rem;
+  }
+
+  .forgetting-curve-legend > *::before {
+    width: 0.7rem;
+    margin-right: 0.2rem;
   }
 }

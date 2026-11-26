@@ -16,7 +16,7 @@ from .core import (
     precompute_memory_coeffs,
 )
 from .few_emri import FewEmriConfig, compute_few_emri_memory_modes
-from .fluxes import compute_poincare_fluxes
+from .fluxes import compute_helicity_flux, compute_poincare_fluxes
 from .nrsur3dq8_remnant import (
     NRSur3dq8RemnantState,
     nrsur3dq8_particle_displacement_memory_mode,
@@ -69,6 +69,7 @@ __all__ = [
     "analytic_single_exponential_memory_modes",
     "cm_strain_lo_modes",
     "complete_nonprecessing_modes",
+    "compute_helicity_flux",
     "compute_memory_modes",
     "compute_poincare_fluxes",
     "compute_vacuum_null_memory_mode",

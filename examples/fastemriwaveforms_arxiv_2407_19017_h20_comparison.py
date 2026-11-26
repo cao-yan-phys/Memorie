@@ -101,6 +101,8 @@ def _plot(
     h2_minus2_nu_t_over_m: np.ndarray,
     h2_minus2_over_nu_m: np.ndarray,
     h2_minus2_phase: np.ndarray,
+    effective_pn: np.ndarray | None = None,
+    plot_mode: bool = True,
 ) -> None:
     import matplotlib
 
@@ -133,6 +135,15 @@ def _plot(
         linewidth=1.6,
         label=r"arXiv:2407.19017",
     )
+    if effective_pn is not None:
+        decreasing = np.flatnonzero(np.diff(effective_pn[:, 1]) < 0.0)
+        if decreasing.size:
+            effective_pn = effective_pn[:int(decreasing[0]) + 1]
+        ax.plot(
+            effective_pn[:, 0], effective_pn[:, 1],
+            color="black", marker=".", linestyle="none", markersize=4.5,
+            label="effective PN", zorder=4,
+        )
     ax.set_xlim(X_MIN, X_MAX)
     ax.set_ylim(0.0, 0.11)
     ax.set_xlabel(r"$(\nu/M)t$")
@@ -143,6 +154,9 @@ def _plot(
     ax.legend(loc="upper left", frameon=False)
     fig.savefig(png_path, dpi=220)
     plt.close(fig)
+
+    if not plot_mode:
+        return
 
     h2_minus2_segments = _oscillatory_mode_segments(
         h2_minus2_nu_t_over_m,
@@ -217,7 +231,12 @@ def main() -> int:
     parser.add_argument("--output-dir", type=Path, default=ROOT / "examples" / "output")
     parser.add_argument("--no-plot", action="store_true")
     parser.add_argument("--plot-from-csv", action="store_true")
+    parser.add_argument("--effective-pn-csv", type=Path)
     args = parser.parse_args()
+    effective_pn = (
+        np.loadtxt(args.effective_pn_csv, delimiter=",", skiprows=1, ndmin=2)
+        if args.effective_pn_csv is not None else None
+    )
 
     q = float(args.primary_mass_msun / args.secondary_mass_msun)
     stem = (
@@ -251,6 +270,7 @@ def main() -> int:
             h2_minus2_nu_t_over_m=output_h2_minus2_x,
             h2_minus2_over_nu_m=output_h2_minus2,
             h2_minus2_phase=output_h2_minus2_phase,
+            effective_pn=effective_pn,
         )
         print(f"wrote {png_path}")
         print(f"wrote {mode_png_path}")
@@ -373,6 +393,7 @@ def main() -> int:
             h2_minus2_nu_t_over_m=h2_minus2_nu_t_over_m,
             h2_minus2_over_nu_m=h2_minus2_over_nu_m,
             h2_minus2_phase=h2_minus2_phase,
+            effective_pn=effective_pn,
         )
 
     print(f"model={result['model']}")

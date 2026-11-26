@@ -227,7 +227,7 @@ def main() -> int:
                 color="red",
                 linestyle="--",
                 linewidth=1.3,
-                label="analytic",
+                label=r"$\propto 1-e^{2\omega_I u}$",
             )
             axis.set_ylabel(ylabel)
             axis.grid(alpha=0.22, linewidth=0.6)

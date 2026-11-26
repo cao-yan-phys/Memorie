@@ -20,7 +20,7 @@ The examples below also use:
 
 ## Functionality
 
-`compute_memory_modes` reconstructs nonlinear null memory modes (see [Favata 2009](https://arxiv.org/abs/0812.0069); [Nichols 2017](https://arxiv.org/abs/1702.03300); [Nichols 2018](https://arxiv.org/abs/1807.08767)) from the supplied strain modes:
+`compute_memory_modes` reconstructs nonlinear null memory modes (see [Favata 2009](https://arxiv.org/abs/0812.0069); [Nichols 2017](https://arxiv.org/abs/1702.03300); [Nichols 2018](https://arxiv.org/abs/1807.08767)) from the supplied strain modes $h_{l,m}(t)=\int d\Omega_2\,h_{ij}\left(\frac{\mathbf{e}^+_{ij}-i\mathbf{e}^\times_{ij}}{2}\right)\,{}_{-2}Y_{l,m}^*(\Theta,\Phi)$ (with $e^+=\mathbf{e}^\Theta \otimes \mathbf{e}^\Theta-\mathbf{e}^\Phi \otimes \mathbf{e}^\Phi$ and $e^\times=\mathbf{e}^\Phi \otimes \mathbf{e}^\Theta+\mathbf{e}^\Theta \otimes \mathbf{e}^\Phi$):
 
 ```python
 from memorie import compute_memory_modes
@@ -39,9 +39,9 @@ hCM20 = memory[(2, 0)]["h_cm"]
 
 With the default `include_cm=True`, the result contains $h^{\mathrm{D}}_{l,m}$, $h^{\mathrm{S}}_{l,m}$, and $h^{\mathrm{CM}}_{l,m}$ for every requested $(l,m)$.
 
-The calculation uses the supplied strain modes in their given Bondi frame. If a waveform model returns only positive-$m$ modes and the source is known to be nonprecessing and reflection symmetric, the missing partners may first be constructed with `complete_nonprecessing_modes`, which applies $h_{l,-m}=(-1)^l h_{l,m}^{*}$.
+The calculation uses the supplied strain modes in their given Bondi frame. If a waveform model returns only positive-$m$ modes and the source is known to be reflection symmetric across the $\Theta=\pi/2$ plane, the missing partners may first be constructed with `complete_nonprecessing_modes`, which applies $h_{l,-m}=(-1)^l h_{l,m}^{*}$.
 
-Besides the nonlinear null GW memory, Memorie can also compute the energy, linear-momentum, and angular-momentum fluxes from the supplied strain modes, together with their cumulative integrals. These are implemented in `compute_poincare_fluxes(t, h, hdot=None)`.
+Besides the nonlinear null GW memory, Memorie can also compute the energy, linear-momentum, angular-momentum, and helicity fluxes from the supplied strain modes, together with their cumulative integrals. These are implemented in `compute_poincare_fluxes` and `compute_helicity_flux`.
 
 Additionally, `particle_displacement_memory.py` evaluates the displacement memory modes $\Delta h_{l,m}$ from initial and final particle states of a scattering process.
 
@@ -110,7 +110,9 @@ For an eccentric Newtonian binary, [Favata](https://arxiv.org/abs/1108.3121) giv
 
 The additional `fastemriwaveforms_arxiv_2407_19017_h20_comparison.py` example compares $h^{\mathrm{D}}_{2,0}$ calculated from `FastEMRIWaveforms` (with effective 0PN extrapolation) with the result reported in [arXiv:2407.19017](https://arxiv.org/abs/2407.19017).
 
-<p align="center"><img src="https://raw.githubusercontent.com/cao-yan-phys/Memorie/main/examples/output/fastemriwaveforms_arxiv_2407_19017_h20_comparison_q100000_chi0.png" width="85%"></p>
+The black points show the effective PN extrapolation using the 3.5PN memory formula and 3PN orbital evolution, matched to the same initial growth rate and truncated before its unphysical downturn.
+
+<p align="center"><img src="https://raw.githubusercontent.com/cao-yan-phys/Memorie/main/examples/output/fastemriwaveforms_arxiv_2407_19017_h20_comparison_q100000_chi0.png?v=f12f57c70541" width="85%"></p>
 
 <p align="center"><img src="https://raw.githubusercontent.com/cao-yan-phys/Memorie/main/examples/output/fastemriwaveforms_arxiv_2407_19017_h20_comparison_q100000_chi0_h2_minus2_h20.png" width="85%"></p>
 
@@ -142,11 +144,11 @@ python examples/qnm_kerr_220_h20_h30_demo.py
 
 This example uses `qnm` to construct the fundamental spin-weighted spheroidal $(l_{\mathrm{s}},m,n)=(2,2,0)$ QNM of a Kerr black hole with spin $\chi=0.7$. Spheroidal-to-spherical mixing preserves $m$, so the input waveform has vanishing $(2,0)$ and $(3,0)$ modes. For $u=(t-t_0)/M$ and $\omega_{220}=\omega_R+i\omega_I$ with $\omega_I<0$, each of the displayed displacement and spin components is proportional to $1-e^{2\omega_Iu}$. The plotted memory modes are normalized by $|A_{220}|^2$, with $A_{220}$ denoting the spheroidal-mode amplitude at $t_0$.
 
-<p align="center"><img src="https://raw.githubusercontent.com/cao-yan-phys/Memorie/main/examples/output/qnm_kerr_220_h20_h30_chi0p7.png?v=fec4d76d8a84" width="85%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/cao-yan-phys/Memorie/main/examples/output/qnm_kerr_220_h20_h30_chi0p7.png?v=a87be8487b8f" width="85%"></p>
 
 ## Particle Scattering Example
 
-The following panels show the supertranslation field $\alpha/M$ from ordinary, null, and total displacement memory for a $2 \to 3$ scattering process. The two massive particles have $m_1=m_2=M/2$, initial velocities $\mathbf{v}_{1,2}=\pm(3/5)\mathbf{e}_z$, and identical final velocities $\mathbf{v}'_1=\mathbf{v}'_2=-(9/41)\mathbf{e}_x$. In the final state, a massless particle is emitted along $\mathbf{e}_x$ with energy $9M/40$.
+The following panels show the supertranslation field $\alpha/M$ from ordinary, null, and total displacement memory for a $2 \to 3$ scattering process. The two massive particles have $m_1=m_2=M/2$, initial velocities $\mathbf{v}_{1,2}=\pm(3/5)\mathbf{e}_z$, and identical final velocities $\mathbf{v}'_1=\mathbf{v}'_2=-(9/41)\mathbf{e}_x$; in the final state, a massless particle is emitted along $\mathbf{e}_x$ with energy $9M/40$.
 
 <p align="center"><img src="https://raw.githubusercontent.com/cao-yan-phys/Memorie/main/examples/output/particle_scattering_supertranslation_q1_p0p375.png?v=5c6dc579c3e0" width="100%"></p>
 
